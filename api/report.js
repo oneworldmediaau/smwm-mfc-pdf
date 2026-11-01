@@ -2,7 +2,8 @@
 // 1. reads the contact's calculator answers from GHL
 // 2. renders the Mortgage Freedom Report PDF
 // 3. uploads it to the Media Library (public link) and to the contact's "SMWM Calc Report" file field
-// 4. writes the link to "SMWM Calc Report URL" and adds the tag smwm-calc-report-ready
+// 4. adds a results note to the contact
+// 5. writes the link to "SMWM Calc Report URL" and adds the tag smwm-calc-report-ready
 import { renderPdf } from '../lib/render.js';
 
 const API = 'https://services.leadconnectorhq.com';
@@ -12,6 +13,8 @@ const F = {
   offset: 'FtMJa2zAf09bIcxiut67', savings: 'KXalSfOaDFjYQWlNHO4Q', value: 'xr9P3Sq4bZ5Ht60imhJx',
   income: 'HBXMlAuh2oj1EbXTmu3m', deps: 'LEQ8lzDBhH0pO1FE4fNw', debts: 'Jaov5G1p9Cy3X11xOn7R',
   reportFile: 'EMUFz2LOceqXpWatpDF9', reportUrl: 'MlZ6WA0pXS9FczyzhnSM',
+  today: 'K5IQnOuWpiRC7hT8MT4W', free: 'T4w2fjc6frRCIYABakM9', yrs: '72CfaKVZqnv1FEpdwZkz',
+  isaved: 'TezvL73i52wmUGsazqxu', total: 'dVneqszJbeVSQV9LW1Vt',
 };
 
 function headers(extra) {
@@ -69,9 +72,43 @@ const run = async (req, res) => {
     } catch (e) { fileSaved = false; console.error('file field upload failed', e.message); }
 
     await ghl('PUT', '/contacts/' + contactId, { customFields: [{ id: F.reportUrl, field_value: url || '' }] });
+
+    // Results note on the contact (non-fatal)
+    let noteSaved = true;
+    try {
+      const $ = (v) => (v == null || v === '' ? '–' : '$' + Math.round(+v).toLocaleString('en-AU'));
+      const s = (id) => (cf[id] == null || cf[id] === '' ? '–' : String(cf[id]));
+      const when = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+      const note = [
+        'MORTGAGE FREEDOM CALCULATOR – ' + when,
+        'Result: ' + (eligible ? 'QUALIFIED for the Mortgage Accelerator' : 'Not eligible – three levers only (info report)'),
+        '',
+        'THEIR ANSWERS',
+        'Loan balance: ' + $(answers.balance),
+        'Interest rate: ' + answers.rate + '%',
+        'Monthly repayment: ' + $(answers.repay),
+        'Offset: ' + $(answers.offset),
+        'Other savings: ' + $(answers.savings),
+        'Home value (their estimate): ' + $(answers.value),
+        'Household income: ' + $(answers.income),
+        'Dependants: ' + answers.deps,
+        'Other loan repayments: ' + $(answers.debts) + ' a month',
+        '',
+        'THEIR RESULTS',
+        "Today's path – debt-free: " + s(F.today),
+        (eligible ? 'With the Mortgage Accelerator: ' : 'With the 3 levers: ') + s(F.free),
+        'Years sooner: ' + s(F.yrs),
+        'Interest saved: ' + $(cf[F.isaved]),
+        'Total cost of loan today (balance + interest): ' + $(cf[F.total]),
+        'Usable equity (80% LVR): ' + $(Math.max(0, answers.value * 0.8 - answers.balance)),
+        '',
+        'Report: ' + (url || '–'),
+      ].join('\n');
+      await ghl('POST', '/contacts/' + contactId + '/notes', { body: note });
+    } catch (e) { noteSaved = false; console.error('note failed', e.message); }
     await ghl('POST', '/contacts/' + contactId + '/tags', { tags: ['smwm-calc-report-ready'] });
 
-    return res.status(200).json({ ok: true, url, eligible, fileSaved });
+    return res.status(200).json({ ok: true, url, eligible, fileSaved, noteSaved });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: e.message });
