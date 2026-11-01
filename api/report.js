@@ -3,7 +3,7 @@
 // 2. renders the Mortgage Freedom Report PDF
 // 3. uploads it to the Media Library (public link) and to the contact's "SMWM Calc Report" file field
 // 4. writes the link to "SMWM Calc Report URL" and adds the tag smwm-calc-report-ready
-const { renderPdf } = require('../lib/render');
+import { renderPdf } from '../lib/render.js';
 
 const API = 'https://services.leadconnectorhq.com';
 const LOCATION_ID = 'BOPw9TAczSRgLZCpM1Ur';
@@ -29,7 +29,10 @@ async function ghl(method, path, body, isForm) {
   return data;
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
+  return run(req, res);
+}
+const run = async (req, res) => {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
     if (!process.env.MFC_SECRET || req.query.key !== process.env.MFC_SECRET) return res.status(401).json({ error: 'bad key' });
