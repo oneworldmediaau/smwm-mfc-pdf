@@ -1,0 +1,9 @@
+{
+  "name": "smwm-mfc-pdf",
+  "private": true,
+  "engines": { "node": "20.x" },
+  "dependencies": {
+    "@sparticuz/chromium": "131.0.1",
+    "puppeteer-core": "23.11.1"
+  }
+}
