@@ -100,7 +100,7 @@ a.lead:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <section class="panel">
     <div class="listhead"><h2 id="list-h">Leads</h2><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="group" id="stat"><button type="button" class="chip" data-s="all">All</button><button type="button" class="chip" data-s="not">Not called</button><button type="button" class="chip" data-s="called">Called</button></div><input id="q" type="search" placeholder="Search name, phone or source" aria-label="Search leads"><button class="btn ghost" id="csv" type="button">Download CSV</button></div></div>
     <div class="tbl"><table id="t-leads"></table></div>
-    <p class="note">Time to call = opportunity created → first outbound call to that contact through GHL. In business-hours mode only Mon–Fri 10am–6pm counts: a lead that arrives at night starts the clock at 10am the next working day, and a call made before 10am counts as 0. Calls made outside GHL can’t be seen. Times are Sydney time.</p>
+    <p class="note">Time to call = opportunity created → first outbound call to that contact through GHL. In business-hours mode only Mon–Fri 10am–6pm counts: a lead that arrives at night starts the clock at 10am the next working day, and a call made before 10am counts as 0. Leads with a Customer Service Outcome of DNQ and no outbound call are left out. Calls made outside GHL can’t be seen. Times are Sydney time.</p>
   </section>
 </div>
 
