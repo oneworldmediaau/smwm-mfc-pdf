@@ -7,6 +7,7 @@
 // whose "Customer Service Representative" is Matt Horne or Jarrod Bray, and how long it took
 // for the first outbound call to that lead after the opportunity was created.
 
+import { businessMs } from '../lib/speed.js';
 const API = 'https://services.leadconnectorhq.com';
 const LOCATION_ID = 'BOPw9TAczSRgLZCpM1Ur';
 const CSR_FIELD = 'sSTk9wqOdy13laKJ6JWK';
@@ -98,9 +99,9 @@ function html(rows, start, end) {
   const summary = REPS.map((r) => { const b = byRep[r]; return `<td style="padding:14px 16px;background:#F3EEE2;border-radius:10px;font-family:Arial,sans-serif;width:50%"><div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#5E6B60;font-weight:bold">${r}</div><div style="font-family:Georgia,serif;font-size:24px;color:#153B24;font-weight:bold;margin:4px 0">${b.n} new</div><div style="font-size:13px;color:#26332A">${b.called} called · avg first call ${b.called ? dur(b.total / b.called) : '–'}${b.n - b.called ? ` · <b style="color:#9A3B2E">${b.n - b.called} not called</b>` : ''}</div></td>`; }).join('<td style="width:12px"></td>');
   const body = rows.length ? rows.map((r) => { const [t, fg, bg] = badge(r.ms); return `<tr>
 <td style="${cell}"><b style="color:#153B24">${r.name}</b><br><span style="color:#5E6B60">${r.phone || ''}</span></td>
-<td style="${cell}">${r.rep}</td><td style="${cell}">${sydTime(r.created)}</td>
-<td style="${cell}">${r.call ? sydTime(r.call.t) + '<br><span style="color:#5E6B60">' + (r.caller || '') + (r.call.duration ? ' · ' + Math.round(r.call.duration / 60) + ' min call' : '') + '</span>' : '<span style="color:#9A3B2E">–</span>'}</td>
-<td style="${cell}"><span style="display:inline-block;padding:4px 10px;border-radius:999px;background:${bg};color:${fg};font-weight:bold;white-space:nowrap">${t}</span></td></tr>`; }).join('')
+<td style="${cell}">${r.rep}<br><span style="color:#5E6B60">${r.source}</span></td><td style="${cell}">${sydTime(r.created)}</td>
+<td style="${cell}">${r.call ? sydTime(r.call.t) + '<br><span style="color:#5E6B60">' + (r.caller || '') + (r.call.duration ? ' · ' + (r.call.duration < 60 ? r.call.duration + ' sec call' : Math.round(r.call.duration / 60) + ' min call') : '') + '</span>' : '<span style="color:#9A3B2E">–</span>'}</td>
+<td style="${cell}"><span style="display:inline-block;padding:4px 10px;border-radius:999px;background:${bg};color:${fg};font-weight:bold;white-space:nowrap">${t}</span><br><span style="color:#5E6B60;font-size:11px">${r.clock != null ? dur(r.clock) + ' clock' : 'waiting ' + dur(r.wait) + ' (business)'}</span></td></tr>`; }).join('')
     : `<tr><td colspan="5" style="${cell}text-align:center;color:#5E6B60">No new opportunities for Matt or Jarrod in this period.</td></tr>`;
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#FBF8F1">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF8F1"><tr><td align="center" style="padding:24px 10px">
@@ -110,8 +111,8 @@ function html(rows, start, end) {
 <div style="font-family:Arial,sans-serif;font-size:13px;color:#B9C8BC;margin-top:4px">${sydTime(start)} → ${sydTime(end)}</div></td></tr>
 <tr><td style="padding:20px 28px 6px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${summary}</tr></table></td></tr>
 <tr><td style="padding:14px 28px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-<tr><th style="${head}">Lead</th><th style="${head}">Rep</th><th style="${head}">Created</th><th style="${head}">First outbound call</th><th style="${head}">Time to call</th></tr>${body}</table>
-<p style="font-family:Arial,sans-serif;font-size:11px;color:#5E6B60;margin-top:14px">Time to call = opportunity created → first outbound call to the contact after that time. Includes nights and weekends. Times in Sydney time.</p></td></tr>
+<tr><th style="${head}">Lead</th><th style="${head}">Rep / Source</th><th style="${head}">Created</th><th style="${head}">First outbound call</th><th style="${head}">Time to call (business hrs)</th></tr>${body}</table>
+<p style="font-family:Arial,sans-serif;font-size:11px;color:#5E6B60;margin-top:14px">Time to call counts business hours only (Mon–Fri 10am–6pm Sydney, excluding NSW public holidays): a lead that arrives after hours starts the clock at 10am the next working day. Clock time is shown underneath.</p></td></tr>
 </table></td></tr></table></body></html>`;
 }
 async function reportContactId() {
@@ -139,7 +140,7 @@ export default async function handler(req, res) {
     for (const o of ops) {
       const created = new Date(o.createdAt).getTime();
       const call = await firstOutboundCall(o.contactId, created);
-      rows.push({ name: (o.contact && o.contact.name) || o.name, phone: o.contact && o.contact.phone, rep: csrOf(o), created, call, ms: call ? call.t - created : null, caller: call ? await userName(call.userId) : '' });
+      rows.push({ source: o.source || '—', name: (o.contact && o.contact.name) || o.name, phone: o.contact && o.contact.phone, rep: csrOf(o), created, call, ms: call ? businessMs(created, call.t) : null, clock: call ? call.t - created : null, wait: call ? null : businessMs(created, Date.now()), caller: call ? await userName(call.userId) : '' });
     }
     rows.sort((a, b) => a.created - b.created);
     const out = html(rows, start, end);
