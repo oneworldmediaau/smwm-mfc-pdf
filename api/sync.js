@@ -35,7 +35,9 @@ export default async function handler(req, res) {
     const running = await getState('sync_lock');
     if (running && Date.now() - running < 55000) return res.status(200).json({ skipped: 'already running' });
     await setState('sync_lock', Date.now());
-    const log = await runSync({ budgetMs: 45000 });
+    // ?budget=20 keeps the whole request under ~30s for cron services with short timeouts (cron-job.org)
+    const budget = Math.min(45, Math.max(10, parseInt(req.query.budget, 10) || 45));
+    const log = await runSync({ budgetMs: budget * 1000 });
     try { log.pp = await maybeSendPpAlerts(); } catch (e) { log.ppError = e.message; }
     try { log.meta = await maybeSyncMeta(); } catch (e) { log.metaError = e.message; }
     await setState('sync_lock', 0);
