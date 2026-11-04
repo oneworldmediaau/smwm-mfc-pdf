@@ -156,12 +156,11 @@ a.lead:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   var reqId=0;
   function load(again){
     var my=++reqId;S.loading=true;$("from").value=S.from;$("to").value=S.to;
-    if(!again){$("status").innerHTML='<div class="progress"><i></i>Loading leads and call logs from GHL…</div>'}
+    if(!again){$("status").innerHTML='<div class="progress"><i></i>Loading…</div>'}
     fetch("/api/speed-data?key="+encodeURIComponent(KEY)+"&from="+S.from+"&to="+S.to,{cache:"no-store"}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||r.status);return j})})
     .then(function(j){if(my!==reqId)return;S.data=j;render();
-      if(j.pending>0){$("status").innerHTML='<div class="progress"><i></i>Checking call logs: '+j.pending+' leads still to check. The table fills in as it goes.</div>';setTimeout(function(){if(my===reqId)load(true)},400)}
-      else{$("status").innerHTML="";S.loading=false}
-      $("updated").textContent="Updated "+new Date(j.generated).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});})
+      if(j.pending>0){$("status").innerHTML='<div class="progress" style="animation:none"><i style="animation:none;border-top-color:var(--gold)"></i>'+j.pending+' leads are still waiting for their call logs to be checked. The background sync fills these in every 15 minutes.</div>'}else{$("status").innerHTML=""}S.loading=false;
+      $("updated").textContent="Data synced "+new Date(j.generated).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});})
     .catch(function(e){if(my!==reqId)return;$("status").innerHTML='<div class="err">Couldn’t load from GHL: '+esc(e.message)+'. Try Refresh.</div>'});
   }
 

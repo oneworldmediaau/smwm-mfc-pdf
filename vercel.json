@@ -1,5 +1,31 @@
 {
   "functions": {
-    "api/report.js": { "memory": 1769, "maxDuration": 60, "includeFiles": "lib/**" }
-  }
+    "api/report.js": {
+      "memory": 1769,
+      "maxDuration": 60,
+      "includeFiles": "lib/**"
+    },
+    "api/daily-report.js": {
+      "maxDuration": 60
+    },
+    "api/speed-data.js": {
+      "maxDuration": 60
+    },
+    "api/dashboard.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/sync.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/daily-report",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/daily-report",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }

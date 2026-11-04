@@ -8,6 +8,7 @@
 // for the first outbound call to that lead after the opportunity was created.
 
 import { businessMs } from '../lib/speed.js';
+import { runSync, speedRows } from '../lib/store.js';
 const API = 'https://services.leadconnectorhq.com';
 const LOCATION_ID = 'BOPw9TAczSRgLZCpM1Ur';
 const CSR_FIELD = 'sSTk9wqOdy13laKJ6JWK';
@@ -135,15 +136,13 @@ export default async function handler(req, res) {
 
     // window: 24 hours ending now (6pm → 6pm when run on schedule)
     const end = now, start = new Date(now.getTime() - 24 * 3600e3);
-    const ops = (await opportunitiesSince(start, end)).filter((o) => REPS.includes(csrOf(o)));
-    const rows = [];
-    for (const o of ops) {
-      const created = new Date(o.createdAt).getTime();
-      const call = await firstOutboundCall(o.contactId, created);
-      const outcome = ((o.customFields || []).find((c) => c.id === 'cjUKFO9YUNYmIZexnK2b') || {});
-      if (!call && String(outcome.fieldValueString || outcome.fieldValue || outcome.value || '') === 'DNQ') continue; // not qualified, no call needed
-      rows.push({ source: o.source || '—', name: (o.contact && o.contact.name) || o.name, phone: o.contact && o.contact.phone, rep: csrOf(o), created, call, ms: call ? businessMs(created, call.t) : null, clock: call ? call.t - created : null, wait: call ? null : businessMs(created, Date.now()), caller: call ? await userName(call.userId) : '' });
-    }
+    // freshen the database first (best effort), then read from it
+    try { await runSync({ budgetMs: 30000 }); } catch (e) { console.error('pre-report sync failed', e.message); }
+    const rows = (await speedRows(start.getTime(), end.getTime()))
+      .filter((r) => REPS.includes(r.rep) && r.checked)
+      .map((r) => ({ source: r.source, name: r.name, phone: r.phone, rep: r.rep, created: r.created,
+        call: r.call ? { t: r.call, duration: r.dur } : null, ms: r.call ? r.biz : null, clock: r.call ? r.call - r.created : null,
+        wait: r.call ? null : r.wait, caller: r.caller }));
     rows.sort((a, b) => a.created - b.created);
     const out = html(rows, start, end);
     if (dry) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.status(200).send(out); }
