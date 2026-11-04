@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Board Report · SmartMoney</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;700;800&display=swap">
+<style>
+/* Board report: spend → leads → meetings → clients. KPI strip, one funnel per pipeline, source table, campaign linking. */
+:root{--ink:#153B24;--ink2:#2E5A40;--gold:#C8973F;--goldink:#7A5514;--cream:#FBF8F1;--soft:#F3EEE2;--tint:#F6EBD3;--muted:#5E6B60;--line:#E4DCC8;--hm:#B9C8BC;--good:#1F6B3F;--goodbg:#E2F1E7;--warn:#9A3B2E;--warnbg:#F7E3DF;--text:#26332A;
+  --meta:#2E5A9E;--metabg:#E5ECF7;--google:#B0581A;--googlebg:#F8E9DD;
+  --display:Fraunces,Georgia,serif;--body:Manrope,"Helvetica Neue",Arial,sans-serif;color-scheme:light}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header.top{background:var(--ink);color:var(--cream);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:22px max(16px,env(safe-area-inset-left,0px))}
+header.top .in{max-width:1280px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.eyebrow{font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--display);font-size:30px;line-height:1.1;margin-top:4px;color:var(--cream)}
+h2{font-family:var(--display);font-size:19px;color:var(--ink);line-height:1.2}
+h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.sub{color:var(--hm);font-size:13px}
+button,select,input{font:inherit;color:inherit}
+.btn{background:var(--gold);color:var(--ink);border:0;border-radius:999px;padding:9px 16px;font-weight:800;cursor:pointer;white-space:nowrap}
+.btn.dark{background:var(--ink);color:var(--cream)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.top .btn.ghost{border-color:#3d6a4f;color:var(--cream)}
+.btn.sm{padding:5px 11px;font-size:12.5px}
+.btn:disabled{opacity:.6;cursor:default}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible,th.sort:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.controls{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
+.group{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.group > span.l{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:13px;color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+input[type=date],input[type=search],select{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff}
+label.tog{display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer}
+.banner{border-radius:12px;padding:12px 16px;font-weight:600;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.banner.amber{background:var(--tint);border:1px solid var(--gold);color:var(--goldink)}
+.banner.err{background:var(--warnbg);color:var(--warn)}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0}
+.kpi small{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1.15;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted)}
+.kpi.cost{background:var(--soft)}
+.delta{font-size:12.5px;font-weight:800;color:var(--muted)}
+.delta.good{color:var(--good)}.delta.bad{color:var(--warn)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.phead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.funnel{display:flex;flex-direction:column;gap:10px}
+.step .row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.step .nm{font-weight:800;color:var(--ink)}
+.step .nm em{font-style:normal;font-weight:600;color:var(--muted);font-size:12px;display:block}
+.step .v{font-family:var(--display);font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:12px;background:var(--soft);border-radius:999px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:999px}
+.step.cm .bar i{background:var(--ink2)}.step.fp .bar i{background:var(--gold)}.step.client .bar i{background:var(--good)}
+.step .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:3px}
+.step .meta b{color:var(--ink)}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px;border-bottom:2px solid var(--ink);white-space:nowrap;font-weight:800;background:#fff}
+th.sort{cursor:pointer;user-select:none}
+th.sort:hover{color:var(--ink)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.tot td{font-weight:800;color:var(--ink);border-top:2px solid var(--ink);background:var(--soft)}
+td b{color:var(--ink)}
+.muted{color:var(--muted)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:800;font-size:11px;white-space:nowrap;margin:1px 3px 1px 0}
+.t-meta{background:var(--metabg);color:var(--meta)}.t-google{background:var(--googlebg);color:var(--google)}.t-org{background:var(--soft);color:var(--muted)}
+.t-src{background:#EAF0EA;color:var(--ink2)}
+.t-sug{background:var(--tint);color:var(--goldink);border:1px dashed var(--gold);cursor:pointer}
+.small{font-size:12px}
+.note{font-size:12px;color:var(--muted)}
+.chg{display:block;font-size:11px;font-weight:700}
+.chg.good{color:var(--good)}.chg.bad{color:var(--warn)}
+.scrim{position:fixed;inset:0;background:rgba(21,59,36,.35);display:flex;justify-content:flex-end;z-index:20}
+.side{width:min(560px,100%);height:100%;overflow:auto;background:var(--cream);padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:-10px 0 30px rgba(0,0,0,.15)}
+.srclist{display:flex;flex-direction:column;gap:2px;max-height:52vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px}
+.srclist label{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer}
+.srclist label:hover{background:var(--soft)}
+.srclist label span{flex:1}
+.srclist label small{color:var(--muted);font-weight:700}
+.srclist label.sug span::after{content:"suggested";margin-left:8px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--goldink);background:var(--tint);padding:1px 6px;border-radius:999px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:999px;font-weight:700;z-index:30}
+.loading{opacity:.55;pointer-events:none}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}h1{font-size:25px}}
+@media print{header.top{background:#fff;color:var(--ink)}h1{color:var(--ink)}.controls,.noprint,#camps{display:none!important}.panel,.kpi{break-inside:avoid}body{background:#fff}}
+</style></head>
+<body>
+<header class="top"><div class="in">
+  <div><p class="eyebrow">SmartMoney · Board report</p><h1>Marketing to clients</h1><p class="sub" id="range-label">Loading…</p></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" class="noprint"><span class="sub" id="updated"></span><button class="btn ghost" id="print" type="button">Print / PDF</button><button class="btn" id="refresh" type="button">Refresh ad spend</button></div>
+</div></header>
+
+<div class="wrap" style="margin-top:18px" id="app">
+  <div class="controls">
+    <div class="group" id="presets"><span class="l">Range</span></div>
+    <div class="group"><input type="date" id="from" aria-label="From date"><span class="muted">to</span><input type="date" id="to" aria-label="To date"><button class="btn ghost sm" id="apply" type="button">Apply</button></div>
+    <div class="group" id="pipes"><span class="l">Pipeline</span></div>
+    <label class="tog"><input type="checkbox" id="compare" checked> Compare to previous period</label>
+  </div>
+  <div id="banners" style="display:flex;flex-direction:column;gap:8px"></div>
+  <section class="kpis" id="kpis" aria-label="Headline numbers"></section>
+  <section class="grid2" id="funnels"></section>
+  <section class="panel">
+    <div class="phead"><div><h2>By opportunity source</h2><p class="note">Spend comes from the ad campaigns linked to each source. A campaign linked to several sources is shared out by how many leads each one brought in.</p></div></div>
+    <div class="tbl"><table id="srcs"></table></div>
+  </section>
+  <section class="panel" id="camps">
+    <div class="phead"><div><h2>Ad campaigns → opportunity sources</h2><p class="note">Link each Meta and Google campaign to the GHL opportunity source(s) its leads arrive under. Links apply to every date range.</p></div>
+      <div class="group"><input type="search" id="csearch" placeholder="Search campaigns" aria-label="Search campaigns"></div></div>
+    <div class="group" id="cfilter"><span class="l">Show</span></div>
+    <div class="tbl"><table id="ctbl"></table></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var KEY=@@KEY@@;
+  var $=function(s){return document.querySelector(s)};
+  var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove()},2200)}
+  function api(a,qs,body){return fetch('/api/board?a='+a+'&key='+encodeURIComponent(KEY)+(qs||''),{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined})
+    .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||r.status);return j})})}
+  // ---- dates (Sydney)
+  function sydToday(){return new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'})}
+  function add(ymd,n){var p=ymd.split('-').map(Number);return new Date(Date.UTC(p[0],p[1]-1,p[2]+n)).toISOString().slice(0,10)}
+  function ym(y,m){return new Date(Date.UTC(y,m,1)).toISOString().slice(0,10)}
+  function nice(ymd){return new Date(ymd+'T00:00:00Z').toLocaleDateString('en-AU',{timeZone:'UTC',day:'numeric',month:'short',year:'numeric'})}
+  var T=sydToday(),TY=+T.slice(0,4),TM=+T.slice(5,7)-1;
+  var fyStart=TM>=6?TY:TY-1, q0=Math.floor(TM/3)*3;
+  var PRESETS=[
+    ['Last 30 days',add(T,-29),T],['This month',ym(TY,TM),T],['Last month',ym(TY,TM-1),add(ym(TY,TM),-1)],
+    ['This quarter',ym(TY,q0),T],['Last quarter',ym(TY,q0-3),add(ym(TY,q0),-1)],['Last 90 days',add(T,-89),T],
+    ['This financial year',fyStart+'-07-01',T],['Last financial year',(fyStart-1)+'-07-01',fyStart+'-06-30']];
+  var S={from:PRESETS[0][1],to:PRESETS[0][2],preset:0,pipes:'both',compare:true,sort:'spend',dir:-1,cf:'spend',cq:''};
+  try{var sv=JSON.parse(localStorage.getItem('board_v1')||'{}');['preset','pipes','compare','sort','dir','cf'].forEach(function(k){if(k in sv)S[k]=sv[k]});if(S.preset>=0&&PRESETS[S.preset]){S.from=PRESETS[S.preset][1];S.to=PRESETS[S.preset][2]}else if(sv.from){S.from=sv.from;S.to=sv.to}}catch(e){}
+  function save(){try{localStorage.setItem('board_v1',JSON.stringify(S))}catch(e){}}
+  var D=null;
+
+  // ---- formatting
+  function money(v){if(v==null||!isFinite(v))return '—';if(v===0)return '$0';return '$'+(Math.abs(v)>=100?Math.round(v).toLocaleString('en-AU'):v.toFixed(2))}
+  function num(v){return v==null?'—':Math.round(v).toLocaleString('en-AU')}
+  function pct(a,b){return b?Math.round(a/b*1000)/10+'%':'—'}
+  function per(spend,n){return n&&spend?spend/n:null}
+  function delta(cur,prev,lowerIsBetter){if(!S.compare||prev==null||cur==null||!isFinite(prev)||!isFinite(cur))return '';if(!prev)return cur?'<span class="delta">new</span>':'';
+    var d=(cur-prev)/prev*100,good=lowerIsBetter?d<0:d>0;if(Math.abs(d)<0.5)return '<span class="delta">no change</span>';
+    return '<span class="delta '+(good?'good':'bad')+'">'+(d>0?'▲ ':'▼ ')+Math.abs(Math.round(d))+'%</span> <span class="s">vs '+(lowerIsBetter?money(prev):num(prev))+'</span>'}
+
+  // ---- aggregate one period for the selected pipelines
+  function pipesSel(){return S.pipes==='both'?['main','fss']:[S.pipes]}
+  function linkedSources(){var s={};(D.links||[]).forEach(function(l){(s[l.source]=s[l.source]||{});s[l.source][l.platform]=1});return s}
+  function agg(P){if(!P)return null;var ps=pipesSel(),LS=linkedSources(),src={},tot={leads:0,cm:0,cmHeld:0,fp:0,fpHeld:0,client:0,value:0,spend:0,meta:0,google:0,paid:{leads:0,cm:0,fp:0,client:0}};
+    ps.forEach(function(pk){var f=P.funnel[pk]||{};Object.keys(f).forEach(function(s){var b=src[s]||(src[s]={source:s,leads:0,cm:0,cmHeld:0,fp:0,fpHeld:0,client:0,value:0,spend:0,meta:0,google:0});
+      ['leads','cm','cmHeld','fp','fpHeld','client','value'].forEach(function(k){b[k]+=f[s][k]||0;tot[k]+=f[s][k]||0})})
+      Object.keys(P.alloc.bySrc).forEach(function(k){var i=k.indexOf('|');if(k.slice(0,i)!==pk)return;var s=k.slice(i+1),a=P.alloc.bySrc[k];
+        var b=src[s]||(src[s]={source:s,leads:0,cm:0,cmHeld:0,fp:0,fpHeld:0,client:0,value:0,spend:0,meta:0,google:0});b.spend+=a.spend;b.meta+=a.meta||0;b.google+=a.google||0;tot.spend+=a.spend;tot.meta+=a.meta||0;tot.google+=a.google||0})});
+    Object.keys(src).forEach(function(s){if(LS[s]){['leads','cm','fp','client'].forEach(function(k){tot.paid[k]+=src[s][k]})}src[s].linked=LS[s]||null});
+    tot.unlinked=P.alloc.unlinked;tot.allSpend=P.spend.reduce(function(a,c){return a+c.spend},0);
+    tot.metaAll=P.spend.filter(function(c){return c.platform==='meta'}).reduce(function(a,c){return a+c.spend},0);
+    tot.googleAll=P.spend.filter(function(c){return c.platform==='google'}).reduce(function(a,c){return a+c.spend},0);
+    return {src:src,tot:tot}}
+
+  // ---- render
+  function render(){
+    if(!D)return;
+    var C=agg(D.cur),Pv=S.compare?agg(D.prev):null,t=C.tot,p=Pv&&Pv.tot;
+    $('#range-label').textContent=nice(D.from)+' – '+nice(D.to)+' · '+D.days+' days'+(S.compare?' · compared with '+nice(D.prevFrom)+' – '+nice(D.prevTo):'');
+    // banners
+    var b='',ms=D.sync.meta_sync,gs=D.sync.google_sync;
+    if(!ms)b+='<div class="banner amber">Meta spend isn’t connected yet, so costs only include Google. Once the Meta token is added, click <b>Refresh ad spend</b>.</div>';
+    else if(ms.last&&ms.last.skipped)b+='<div class="banner amber">Meta: '+esc(ms.last.skipped)+'</div>';
+    if(!gs)b+='<div class="banner amber">Google Ads spend isn’t connected yet. It appears after the Google Ads Script runs for the first time.</div>';
+    var unl=D.campaigns&&D.cur.spend.filter(function(c){return c.spend>0&&!D.links.some(function(l){return l.platform===c.platform&&l.campaign_id===c.campaign_id})});
+    if(unl&&unl.length)b+='<div class="banner amber">'+unl.length+' campaign'+(unl.length===1?'':'s')+' with '+money(t.unlinked)+' of spend in this period '+(unl.length===1?'isn’t':'aren’t')+' linked to a source yet, so '+(unl.length===1?'it’s':'they’re')+' left out of the cost per lead figures. <a href="#camps" style="color:inherit;font-weight:800" id="go-unl">Link them below</a>.</div>';
+    $('#banners').innerHTML=b;var gu=$('#go-unl');if(gu)gu.onclick=function(){S.cf='unlinked';save();renderCamps()};
+    // KPIs
+    var spendShown=t.spend+(S.pipes==='both'?t.unlinked:0);
+    var K=[
+      ['Ad spend',money(spendShown),'<span class="s"><span class="tag t-meta">Meta '+money(S.pipes==='both'?t.metaAll:t.meta)+'</span><span class="tag t-google">Google '+money(S.pipes==='both'?t.googleAll:t.google)+'</span></span>'+(S.pipes!=='both'?'<br><span class="s">Share of linked spend for this pipeline</span>':''),delta(spendShown,p&&p.spend+(S.pipes==='both'?p.unlinked:0),false).replace('good','x').replace('bad','x'),''],
+      ['New leads',num(t.leads),'<span class="s">'+num(t.paid.leads)+' from paid sources</span>',delta(t.leads,p&&p.leads),''],
+      ['Cost per lead',money(per(t.spend,t.paid.leads)),'<span class="s">Blended '+money(per(spendShown,t.leads))+' across all leads</span>',delta(per(t.spend,t.paid.leads),p&&per(p.spend,p.paid.leads),true),'cost'],
+      ['CM meetings',num(t.cm),'<span class="s">'+pct(t.cm,t.leads)+' of leads</span>',delta(t.cm,p&&p.cm),''],
+      ['Cost per CM meeting',money(per(t.spend,t.paid.cm)),'<span class="s">Blended '+money(per(spendShown,t.cm))+'</span>',delta(per(t.spend,t.paid.cm),p&&per(p.spend,p.paid.cm),true),'cost'],
+      ['FP meetings',num(t.fp),'<span class="s">'+pct(t.fp,t.cm)+' of CM meetings</span>',delta(t.fp,p&&p.fp),''],
+      ['Cost per FP meeting',money(per(t.spend,t.paid.fp)),'<span class="s">Blended '+money(per(spendShown,t.fp))+'</span>',delta(per(t.spend,t.paid.fp),p&&per(p.spend,p.paid.fp),true),'cost'],
+      ['Clients',num(t.client),'<span class="s">'+pct(t.client,t.leads)+' of leads</span>',delta(t.client,p&&p.client),''],
+      ['Cost per client',money(per(t.spend,t.paid.client)),'<span class="s">Blended '+money(per(spendShown,t.client))+'</span>',delta(per(t.spend,t.paid.client),p&&per(p.spend,p.paid.client),true),'cost'],
+      ['Client value',money(t.value),'<span class="s">'+(spendShown?(t.value/spendShown).toFixed(1)+'× return on spend':'Opportunity value of clients')+'</span>',delta(t.value,p&&p.value),'']];
+    $('#kpis').innerHTML=K.map(function(k){return '<div class="kpi '+k[4]+'"><small>'+k[0]+'</small><b>'+k[1]+'</b>'+k[2]+(k[3]?'<div>'+k[3]+'</div>':'')+'</div>'}).join('');
+    // funnels
+    $('#funnels').innerHTML=D.pipelines.filter(function(pl){return pipesSel().indexOf(pl.key)>=0}).map(function(pl){
+      var f={leads:0,cm:0,cmHeld:0,fp:0,fpHeld:0,client:0,value:0},sp=0,fp0={leads:0,cm:0,fp:0,client:0},spp=0,pf=D.cur.funnel[pl.key]||{},LS=linkedSources();
+      Object.keys(pf).forEach(function(s){Object.keys(f).forEach(function(k){f[k]+=pf[s][k]||0});if(LS[s])['leads','cm','fp','client'].forEach(function(k){fp0[k]+=pf[s][k]||0})});
+      Object.keys(D.cur.alloc.bySrc).forEach(function(k){if(k.indexOf(pl.key+'|')===0)sp+=D.cur.alloc.bySrc[k].spend});
+      var steps=[['leads','New leads','Created in this period','lead'],['cm','Client Manager meeting',pl.labels.cm+' or later','cm'],['fp','Financial Planner meeting',pl.labels.fp+' or later','fp'],['client','Client',pl.labels.client,'client']];
+      var prevStep=null;
+      var h=steps.map(function(s){var v=f[s[0]],w=f.leads?Math.max(v/f.leads*100,v?1.5:0):0,held=s[0]==='cm'&&pl.labels.cmHeld?f.cmHeld:s[0]==='fp'&&pl.labels.fpHeld?f.fpHeld:null;
+        var m='<div class="meta">'+(prevStep?'<span><b>'+pct(v,f[prevStep])+'</b> of previous step</span>':'')+(s[0]!=='leads'?'<span><b>'+pct(v,f.leads)+'</b> of leads</span>':'')+(sp?'<span>Cost each <b>'+money(per(sp,fp0[s[0]]))+'</b></span>':'')+(held!=null?'<span>Held: <b>'+num(held)+'</b></span>':'')+'</div>';
+        prevStep=s[0];
+        return '<div class="step '+s[3]+'"><div class="row"><div class="nm">'+s[1]+'<em>'+esc(s[2])+'</em></div><div class="v">'+num(v)+'</div></div><div class="bar"><i style="width:'+w+'%"></i></div>'+m+'</div>'}).join('');
+      return '<div class="panel"><div class="phead"><div><h2>'+esc(pl.name)+'</h2><p class="note">'+money(sp)+' linked ad spend · '+money(f.value)+' client value</p></div></div><div class="funnel">'+h+'</div></div>'}).join('');
+    renderSources(C,Pv);renderCamps();
+  }
+  var SCOLS=[['source','Source',0],['spend','Spend',1],['leads','Leads',1],['cpl','CPL',1],['cm','CM mtgs',1],['cpcm','Cost / CM',1],['fp','FP mtgs',1],['cpfp','Cost / FP',1],['client','Clients',1],['cpc','Cost / client',1],['conv','Lead → client',1],['value','Value',1]];
+  function renderSources(C,Pv){
+    var rows=Object.keys(C.src).map(function(s){var r=C.src[s];r.cpl=per(r.spend,r.leads);r.cpcm=per(r.spend,r.cm);r.cpfp=per(r.spend,r.fp);r.cpc=per(r.spend,r.client);r.conv=r.leads?r.client/r.leads:null;r.prev=Pv&&Pv.src[s];return r})
+      .filter(function(r){return r.leads||r.spend});
+    rows.sort(function(a,b){var x=a[S.sort],y=b[S.sort];if(x==null&&y==null)return b.leads-a.leads;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*S.dir||b.leads-a.leads});
+    var h='<thead><tr>'+SCOLS.map(function(c){return '<th class="sort'+(c[2]?' n':'')+'" tabindex="0" data-k="'+c[0]+'" aria-sort="'+(S.sort===c[0]?(S.dir>0?'ascending':'descending'):'none')+'">'+c[1]+(S.sort===c[0]?(S.dir>0?' ▲':' ▼'):'')+'</th>'}).join('')+'</tr></thead><tbody>';
+    function ch(cur,prev,lower){if(!S.compare||!prev||prev==null||cur==null)return '';if(!prev)return '';var d=(cur-prev)/prev*100;if(Math.abs(d)<1)return '';var g=lower?d<0:d>0;return '<span class="chg '+(g?'good':'bad')+'">'+(d>0?'▲':'▼')+Math.abs(Math.round(d))+'%</span>'}
+    h+=rows.map(function(r){var pv=r.prev||{},pl=pv.spend!=null?pv:null;
+      return '<tr><td><b>'+esc(r.source)+'</b><br>'+(r.linked?(r.linked.meta?'<span class="tag t-meta">Meta</span>':'')+(r.linked.google?'<span class="tag t-google">Google</span>':''):'<span class="tag t-org">No linked ads</span>')+'</td>'+
+        '<td class="n">'+(r.spend?money(r.spend):'<span class="muted">—</span>')+'</td><td class="n">'+num(r.leads)+ch(r.leads,pv.leads)+'</td><td class="n">'+money(r.cpl)+(pl?ch(r.cpl,per(pv.spend,pv.leads),true):'')+'</td>'+
+        '<td class="n">'+num(r.cm)+'</td><td class="n">'+money(r.cpcm)+'</td><td class="n">'+num(r.fp)+'</td><td class="n">'+money(r.cpfp)+'</td>'+
+        '<td class="n">'+num(r.client)+'</td><td class="n">'+money(r.cpc)+'</td><td class="n">'+(r.conv==null?'—':(r.conv*100).toFixed(1)+'%')+'</td><td class="n">'+(r.value?money(r.value):'—')+'</td></tr>'}).join('');
+    var t=C.tot;
+    h+='<tr class="tot"><td>All sources</td><td class="n">'+money(t.spend)+'</td><td class="n">'+num(t.leads)+'</td><td class="n">'+money(per(t.spend,t.paid.leads))+'</td><td class="n">'+num(t.cm)+'</td><td class="n">'+money(per(t.spend,t.paid.cm))+'</td><td class="n">'+num(t.fp)+'</td><td class="n">'+money(per(t.spend,t.paid.fp))+'</td><td class="n">'+num(t.client)+'</td><td class="n">'+money(per(t.spend,t.paid.client))+'</td><td class="n">'+pct(t.client,t.leads)+'</td><td class="n">'+money(t.value)+'</td></tr>';
+    if(!rows.length)h+='<tr><td colspan="12" class="muted">No leads in this period.</td></tr>';
+    $('#srcs').innerHTML=h+'</tbody>';
+    Array.prototype.forEach.call(document.querySelectorAll('#srcs th'),function(th){var go=function(){var k=th.dataset.k;if(S.sort===k)S.dir=-S.dir;else{S.sort=k;S.dir=k==='source'||/^cp|cpl/.test(k)?1:-1}save();render()};th.onclick=go;th.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}});
+  }
+  var SUG={};
+  function renderCamps(){
+    var spendBy={};D.cur.spend.forEach(function(c){spendBy[c.platform+'|'+c.campaign_id]=c});
+    var L={};D.links.forEach(function(l){(L[l.platform+'|'+l.campaign_id]=L[l.platform+'|'+l.campaign_id]||[]).push(l.source)});
+    var rows=D.campaigns.map(function(c){var k=c.platform+'|'+c.id,s=spendBy[k]||{spend:0,impressions:0,clicks:0,platform_leads:0};return {c:c,k:k,s:s,links:L[k]||[],ghl:D.cur.alloc.campLeads[k]}})
+      .filter(function(r){if(S.cf==='spend'&&!r.s.spend)return false;if(S.cf==='unlinked'&&(r.links.length||!r.s.spend))return false;if(S.cq&&(r.c.name||'').toLowerCase().indexOf(S.cq)<0)return false;return true})
+      .sort(function(a,b){return b.s.spend-a.s.spend||String(b.c.last_spend||'').localeCompare(String(a.c.last_spend||''))});
+    var h='<thead><tr><th>Campaign</th><th class="n">Spend</th><th class="n">Clicks</th><th class="n">Platform leads</th><th class="n">GHL leads</th><th class="n">CPL (GHL)</th><th>Linked sources</th><th></th></tr></thead><tbody>';
+    h+=rows.slice(0,300).map(function(r){var sug=(SUG[r.k]||[]).filter(function(x){return r.links.indexOf(x.source)<0}).slice(0,2);
+      return '<tr><td><span class="tag t-'+r.c.platform+'">'+(r.c.platform==='meta'?'Meta':'Google')+'</span> <b>'+esc(r.c.name)+'</b>'+(r.c.status&&r.c.status!=='ACTIVE'&&r.c.status!=='ENABLED'?' <span class="muted small">'+esc(String(r.c.status).toLowerCase().replace(/_/g,' '))+'</span>':'')+'</td>'+
+        '<td class="n">'+money(r.s.spend)+'</td><td class="n">'+num(r.s.clicks)+'</td><td class="n">'+num(r.s.platform_leads)+'</td><td class="n">'+(r.ghl==null?'<span class="muted">—</span>':num(r.ghl))+'</td><td class="n">'+(r.ghl?money(r.s.spend/r.ghl):'—')+'</td>'+
+        '<td>'+(r.links.map(function(s){return '<span class="tag t-src">'+esc(s)+'</span>'}).join('')||'<span class="muted small">Not linked</span>')+
+          sug.map(function(x){return '<span class="tag t-sug" role="button" tabindex="0" data-acc="'+esc(r.k)+'" data-src="'+esc(x.source)+'" title="Leads from this campaign mostly arrive under this source. Click to link.">+ '+esc(x.source)+'?</span>'}).join('')+'</td>'+
+        '<td><button class="btn ghost sm" type="button" data-link="'+esc(r.k)+'">'+(r.links.length?'Edit':'Link')+'</button></td></tr>'}).join('');
+    if(!rows.length)h+='<tr><td colspan="8" class="muted">'+(S.cf==='unlinked'?'Every campaign with spend in this period is linked.':'No campaigns to show.')+'</td></tr>';
+    $('#ctbl').innerHTML=h+'</tbody>';
+    Array.prototype.forEach.call(document.querySelectorAll('#cfilter .chip'),function(b){b.setAttribute('aria-pressed',String(b.dataset.v===S.cf))});
+    Array.prototype.forEach.call(document.querySelectorAll('[data-link]'),function(b){b.onclick=function(){linkPanel(b.dataset.link)}});
+    Array.prototype.forEach.call(document.querySelectorAll('[data-acc]'),function(b){var go=function(){var k=b.dataset.acc,cur=(L[k]||[]).concat([b.dataset.src]);saveLinks(k,cur)};b.onclick=go;b.onkeydown=function(e){if(e.key==='Enter'){go()}}});
+  }
+  function saveLinks(k,sources){var i=k.indexOf('|');return api('links','',{platform:k.slice(0,i),campaign_id:k.slice(i+1),sources:sources}).then(function(){toast('Links saved');return load()}).catch(function(e){toast(e.message)})}
+  function linkPanel(k){
+    var c=D.campaigns.find(function(x){return x.platform+'|'+x.id===k}),cur=D.links.filter(function(l){return l.platform+'|'+l.campaign_id===k}).map(function(l){return l.source}),sug=(SUG[k]||[]).map(function(x){return x.source});
+    var srcs=D.sources.slice();cur.forEach(function(s){if(!srcs.some(function(x){return x.source===s}))srcs.push({source:s,n:0})});
+    srcs.sort(function(a,b){var sa=sug.indexOf(a.source)>=0,sb=sug.indexOf(b.source)>=0;return (cur.indexOf(b.source)>=0)-(cur.indexOf(a.source)>=0)||sb-sa||b.n-a.n});
+    var s=document.createElement('div');s.className='scrim';
+    s.innerHTML='<aside class="side" role="dialog" aria-modal="true" aria-label="Link campaign"><div class="phead"><div><h3>'+(c.platform==='meta'?'Meta':'Google')+' campaign</h3><h2>'+esc(c.name)+'</h2></div><button class="btn ghost sm" type="button" data-x>Close</button></div>'+
+      '<p class="note">Tick the opportunity source(s) that leads from this campaign arrive under in GHL. Counts are leads in the last 180 days.</p>'+
+      '<input type="search" placeholder="Filter sources" data-f aria-label="Filter sources">'+
+      '<div class="srclist">'+srcs.map(function(x){return '<label class="'+(sug.indexOf(x.source)>=0?'sug':'')+'" data-s="'+esc(x.source.toLowerCase())+'"><input type="checkbox" value="'+esc(x.source)+'"'+(cur.indexOf(x.source)>=0?' checked':'')+'><span>'+esc(x.source)+'</span><small>'+num(x.n)+'</small></label>'}).join('')+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn dark" type="button" data-save>Save links</button><button class="btn ghost" type="button" data-clear>Unlink all</button></div></aside>';
+    document.body.appendChild(s);
+    var close=function(){s.remove()};s.onclick=function(e){if(e.target===s)close()};s.querySelector('[data-x]').onclick=close;
+    document.addEventListener('keydown',function kk(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',kk)}});
+    s.querySelector('[data-f]').oninput=function(){var v=this.value.toLowerCase();Array.prototype.forEach.call(s.querySelectorAll('.srclist label'),function(l){l.hidden=v&&l.dataset.s.indexOf(v)<0})};
+    s.querySelector('[data-save]').onclick=function(){var v=Array.prototype.map.call(s.querySelectorAll('.srclist input:checked'),function(i){return i.value});this.disabled=true;saveLinks(k,v).then(close)};
+    s.querySelector('[data-clear]').onclick=function(){this.disabled=true;saveLinks(k,[]).then(close)};
+    s.querySelector('[data-f]').focus();
+  }
+  // ---- controls
+  PRESETS.forEach(function(p,i){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[0];b.onclick=function(){S.preset=i;S.from=p[1];S.to=p[2];save();load()};b.dataset.i=i;$('#presets').appendChild(b)});
+  [['both','Both'],['main','MAIN'],['fss','Free Strategy Session']].forEach(function(p){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[1];b.dataset.v=p[0];b.onclick=function(){S.pipes=p[0];save();syncControls();render()};$('#pipes').appendChild(b)});
+  [['spend','Spent in this period'],['unlinked','Not linked'],['all','All campaigns']].forEach(function(p){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[1];b.dataset.v=p[0];b.onclick=function(){S.cf=p[0];save();renderCamps()};$('#cfilter').appendChild(b)});
+  $('#csearch').oninput=function(){S.cq=this.value.toLowerCase();renderCamps()};
+  $('#apply').onclick=function(){var f=$('#from').value,t=$('#to').value;if(!f||!t||f>t){toast('Choose a start date before the end date');return}S.preset=-1;S.from=f;S.to=t;save();load()};
+  $('#compare').onchange=function(){S.compare=this.checked;save();load()};
+  $('#print').onclick=function(){window.print()};
+  $('#refresh').onclick=function(){var b=this;b.disabled=true;b.textContent='Refreshing…';api('refresh','',{}).then(function(r){var m=r.meta||{};toast(m.saved!=null?'Meta updated ('+m.saved+' rows)':(m.skipped||'Done'));return load()}).catch(function(e){toast(e.message)}).then(function(){b.disabled=false;b.textContent='Refresh ad spend'})};
+  function syncControls(){Array.prototype.forEach.call(document.querySelectorAll('#presets .chip'),function(b){b.setAttribute('aria-pressed',String(+b.dataset.i===S.preset))});
+    Array.prototype.forEach.call(document.querySelectorAll('#pipes .chip'),function(b){b.setAttribute('aria-pressed',String(b.dataset.v===S.pipes))});
+    $('#from').value=S.from;$('#to').value=S.to;$('#compare').checked=S.compare}
+  function ago(ms){if(!ms)return null;var m=Math.round((Date.now()-ms)/60000);return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'}
+  function load(){syncControls();$('#app').classList.add('loading');
+    return Promise.all([api('data','&from='+S.from+'&to='+S.to+'&compare='+(S.compare?1:0)),api('suggest')]).then(function(r){D=r[0];SUG={};(r[1].suggestions||[]).forEach(function(x){var k=x.platform+'|'+x.id;(SUG[k]=SUG[k]||[]).push(x)});
+      var u=[];if(D.sync.last_sync&&D.sync.last_sync.at)u.push('GHL '+ago(D.sync.last_sync.at));if(D.sync.meta_sync)u.push('Meta '+ago(D.sync.meta_sync.at));if(D.sync.google_sync)u.push('Google '+ago(D.sync.google_sync.at));$('#updated').textContent=u.length?'Updated: '+u.join(' · '):'';
+      render()}).catch(function(e){$('#banners').innerHTML='<div class="banner err">Couldn’t load the report: '+esc(e.message)+'</div>'}).then(function(){$('#app').classList.remove('loading')})}
+  load();
+})();
+</script>
+</body></html>
