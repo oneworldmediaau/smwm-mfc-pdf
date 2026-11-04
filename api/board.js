@@ -11,7 +11,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { ensureSchema } from '../lib/db.js';
 import { sydYmd } from '../lib/speed.js';
-import { boardData, setLinks, suggestions } from '../lib/board.js';
+import { boardData, setLinks, suggestions, people } from '../lib/board.js';
+import { LOCATION_ID } from '../lib/speed.js';
 import { maybeSyncMeta, ingestGoogle, googleSince } from '../lib/ads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +48,11 @@ export default async function handler(req, res) {
       const from = ymd(req.query.from) ? req.query.from : addDays(to, -29);
       if (from > to) return res.status(400).json({ error: 'Start date is after end date.' });
       return res.status(200).json(await boardData(from, to, req.query.compare !== '0', req.query.mode));
+    }
+    if (a === 'people') {
+      const to = ymd(req.query.to) ? req.query.to : sydYmd(Date.now()), from = ymd(req.query.from) ? req.query.from : addDays(to, -29);
+      const r = await people(from, to, req.query.mode, req.query.step, String(req.query.pipes || '').split(',').filter(Boolean), req.query.source || null);
+      return res.status(200).json({ ...r, app: (process.env.GHL_APP_URL || 'https://crm.smartmoneygroup.com.au').replace(/\/$/, '') + '/v2/location/' + LOCATION_ID + '/contacts/detail/' });
     }
     if (a === 'suggest') return res.status(200).json({ suggestions: await suggestions() });
     if (a === 'links' && req.method === 'POST') return res.status(200).json(await setLinks(body.platform, body.campaign_id, body.sources, 'dashboard'));

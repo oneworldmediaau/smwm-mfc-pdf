@@ -84,6 +84,13 @@ td b{color:var(--ink)}
 .srclist label span{flex:1}
 .srclist label small{color:var(--muted);font-weight:700}
 .srclist label.sug span::after{content:"suggested";margin-left:8px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--goldink);background:var(--tint);padding:1px 6px;border-radius:999px}
+.kpi.click,.step.click,td.click{cursor:pointer}
+.kpi.click:hover{border-color:var(--gold)}.step.click{border-radius:10px;padding:6px 8px;margin:-6px -8px}.step.click:hover{background:var(--soft)}
+td.click span.lk{border-bottom:1px dotted var(--gold)}td.click:hover span.lk{color:var(--goldink)}
+.kpi .more{font-size:11.5px;font-weight:800;color:var(--goldink);margin-top:4px}
+.side.wide{width:min(1100px,100%)}
+.ptbl td{font-size:12.5px}.ptbl a{color:var(--ink);font-weight:800;text-decoration:none;border-bottom:1px solid var(--gold)}
+.sumbox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:999px;font-weight:700;z-index:30}
 .loading{opacity:.55;pointer-events:none}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -183,16 +190,17 @@ td b{color:var(--ink)}
     var spendShown=t.spend+(S.pipes==='both'?t.unlinked:0);
     var K=[
       ['Ad spend',money(spendShown),'<span class="s"><span class="tag t-meta">Meta '+money(S.pipes==='both'?t.metaAll:t.meta)+'</span><span class="tag t-google">Google '+money(S.pipes==='both'?t.googleAll:t.google)+'</span></span>'+(S.pipes!=='both'?'<br><span class="s">Share of linked spend for this pipeline</span>':''),delta(spendShown,p&&p.spend+(S.pipes==='both'?p.unlinked:0),false).replace('good','x').replace('bad','x'),''],
-      ['New leads',num(t.leads),'<span class="s">'+num(t.paid.leads)+' from paid sources</span>',delta(t.leads,p&&p.leads),''],
+      ['New leads',num(t.leads),'<span class="s">'+num(t.paid.leads)+' from paid sources</span>',delta(t.leads,p&&p.leads),'','leads'],
       ['Cost per lead',money(per(t.spend,t.paid.leads)),'<span class="s">Blended '+money(per(spendShown,t.leads))+' across all leads</span>',delta(per(t.spend,t.paid.leads),p&&per(p.spend,p.paid.leads),true),'cost'],
-      ['CM meetings',num(t.cm),'<span class="s">'+pct(t.cm,t.leads)+' of leads</span>',delta(t.cm,p&&p.cm),''],
+      ['CM meetings',num(t.cm),'<span class="s">'+pct(t.cm,t.leads)+' of leads</span>',delta(t.cm,p&&p.cm),'','cm'],
       ['Cost per CM meeting',money(per(t.spend,t.paid.cm)),'<span class="s">Blended '+money(per(spendShown,t.cm))+'</span>',delta(per(t.spend,t.paid.cm),p&&per(p.spend,p.paid.cm),true),'cost'],
-      ['FP meetings',num(t.fp),'<span class="s">'+pct(t.fp,t.cm)+' of CM meetings</span>',delta(t.fp,p&&p.fp),''],
+      ['FP meetings',num(t.fp),'<span class="s">'+pct(t.fp,t.cm)+' of CM meetings</span>',delta(t.fp,p&&p.fp),'','fp'],
       ['Cost per FP meeting',money(per(t.spend,t.paid.fp)),'<span class="s">Blended '+money(per(spendShown,t.fp))+'</span>',delta(per(t.spend,t.paid.fp),p&&per(p.spend,p.paid.fp),true),'cost'],
-      ['Clients',num(t.client),'<span class="s">'+pct(t.client,t.leads)+' of leads</span>',delta(t.client,p&&p.client),''],
+      ['Clients',num(t.client),'<span class="s">'+pct(t.client,t.leads)+' of leads</span>',delta(t.client,p&&p.client),'','client'],
       ['Cost per client',money(per(t.spend,t.paid.client)),'<span class="s">Blended '+money(per(spendShown,t.client))+'</span>',delta(per(t.spend,t.paid.client),p&&per(p.spend,p.paid.client),true),'cost'],
-      ['Client value',money(t.value),'<span class="s">'+(spendShown?(t.value/spendShown).toFixed(1)+'× return on spend':'Opportunity value of clients')+'</span>',delta(t.value,p&&p.value),'']];
-    $('#kpis').innerHTML=K.map(function(k){return '<div class="kpi '+k[4]+'"><small>'+k[0]+'</small><b>'+k[1]+'</b>'+k[2]+(k[3]?'<div>'+k[3]+'</div>':'')+'</div>'}).join('');
+      ['Client value',money(t.value),'<span class="s">'+(spendShown?(t.value/spendShown).toFixed(1)+'× return on spend':'Opportunity value of clients')+'</span>',delta(t.value,p&&p.value),'','client']];
+    $('#kpis').innerHTML=K.map(function(k){return '<div class="kpi '+k[4]+(k[5]?' click" role="button" tabindex="0" data-step="'+k[5]+'"':'"')+'><small>'+k[0]+'</small><b>'+k[1]+'</b>'+k[2]+(k[3]?'<div>'+k[3]+'</div>':'')+(k[5]?'<div class="more">See who →</div>':'')+'</div>'}).join('');
+    bindClicks('#kpis [data-step]',function(el){return {step:el.dataset.step,pipes:pipesSel()}});
     // funnels
     $('#funnels').innerHTML=D.pipelines.filter(function(pl){return pipesSel().indexOf(pl.key)>=0}).map(function(pl){
       var f={leads:0,cm:0,cmHeld:0,fp:0,fpHeld:0,client:0,value:0},sp=0,fp0={leads:0,cm:0,fp:0,client:0},spp=0,pf=D.cur.funnel[pl.key]||{},LS=linkedSources();
@@ -203,8 +211,9 @@ td b{color:var(--ink)}
       var h=steps.map(function(s){var v=f[s[0]],w=f.leads?Math.max(v/f.leads*100,v?1.5:0):0,held=s[0]==='cm'&&pl.labels.cmHeld?f.cmHeld:s[0]==='fp'&&pl.labels.fpHeld?f.fpHeld:null;
         var m='<div class="meta">'+(prevStep?'<span><b>'+pct(v,f[prevStep])+'</b> of previous step</span>':'')+(s[0]!=='leads'?'<span><b>'+pct(v,f.leads)+'</b> of leads</span>':'')+(sp?'<span>Cost each <b>'+money(per(sp,fp0[s[0]]))+'</b></span>':'')+(held!=null?'<span>Held: <b>'+num(held)+'</b></span>':'')+'</div>';
         prevStep=s[0];
-        return '<div class="step '+s[3]+'"><div class="row"><div class="nm">'+s[1]+'<em>'+esc(s[2])+'</em></div><div class="v">'+num(v)+'</div></div><div class="bar"><i style="width:'+w+'%"></i></div>'+m+'</div>'}).join('');
+        return '<div class="step click '+s[3]+'" role="button" tabindex="0" data-step="'+s[0]+'" data-pipe="'+pl.key+'"><div class="row"><div class="nm">'+s[1]+'<em>'+esc(s[2])+'</em></div><div class="v">'+num(v)+'</div></div><div class="bar"><i style="width:'+w+'%"></i></div>'+m+'</div>'}).join('');
       return '<div class="panel"><div class="phead"><div><h2>'+esc(pl.name)+'</h2><p class="note">'+money(sp)+' linked ad spend · '+money(f.value)+' client value</p></div></div><div class="funnel">'+h+'</div></div>'}).join('');
+    bindClicks('#funnels [data-step]',function(el){return {step:el.dataset.step,pipes:[el.dataset.pipe]}});
     renderSources(C,Pv);renderCamps();
   }
   var SCOLS=[['source','Source',0],['spend','Spend',1],['leads','Leads',1],['cpl','CPL',1],['cm','CM mtgs',1],['cpcm','Cost / CM',1],['fp','FP mtgs',1],['cpfp','Cost / FP',1],['client','Clients',1],['cpc','Cost / client',1],['conv','Lead → client',1],['value','Value',1]];
@@ -216,14 +225,45 @@ td b{color:var(--ink)}
     function ch(cur,prev,lower){if(!S.compare||!prev||prev==null||cur==null)return '';if(!prev)return '';var d=(cur-prev)/prev*100;if(Math.abs(d)<1)return '';var g=lower?d<0:d>0;return '<span class="chg '+(g?'good':'bad')+'">'+(d>0?'▲':'▼')+Math.abs(Math.round(d))+'%</span>'}
     h+=rows.map(function(r){var pv=r.prev||{},pl=pv.spend!=null?pv:null;
       return '<tr><td><b>'+esc(r.source)+'</b><br>'+(r.linked?(r.linked.meta?'<span class="tag t-meta">Meta</span>':'')+(r.linked.google?'<span class="tag t-google">Google</span>':''):'<span class="tag t-org">No linked ads</span>')+'</td>'+
-        '<td class="n">'+(r.spend?money(r.spend):'<span class="muted">—</span>')+'</td><td class="n">'+num(r.leads)+ch(r.leads,pv.leads)+'</td><td class="n">'+money(r.cpl)+(pl?ch(r.cpl,per(pv.spend,pv.leads),true):'')+'</td>'+
-        '<td class="n">'+num(r.cm)+'</td><td class="n">'+money(r.cpcm)+'</td><td class="n">'+num(r.fp)+'</td><td class="n">'+money(r.cpfp)+'</td>'+
-        '<td class="n">'+num(r.client)+'</td><td class="n">'+money(r.cpc)+'</td><td class="n">'+(r.conv==null?'—':(r.conv*100).toFixed(1)+'%')+'</td><td class="n">'+(r.value?money(r.value):'—')+'</td></tr>'}).join('');
+        '<td class="n">'+(r.spend?money(r.spend):'<span class="muted">—</span>')+'</td><td class="n'+(r.leads?' click" data-step="leads" data-src="'+esc(r.source)+'"><span class="lk">':'"><span>')+num(r.leads)+'</span>'+ch(r.leads,pv.leads)+'</td><td class="n">'+money(r.cpl)+(pl?ch(r.cpl,per(pv.spend,pv.leads),true):'')+'</td>'+
+        '<td class="n'+(r.cm?' click" data-step="cm" data-src="'+esc(r.source)+'"><span class="lk">':'"><span>')+num(r.cm)+'</span>'+'</td><td class="n">'+money(r.cpcm)+'</td><td class="n'+(r.fp?' click" data-step="fp" data-src="'+esc(r.source)+'"><span class="lk">':'"><span>')+num(r.fp)+'</span>'+'</td><td class="n">'+money(r.cpfp)+'</td>'+
+        '<td class="n'+(r.client?' click" data-step="client" data-src="'+esc(r.source)+'"><span class="lk">':'"><span>')+num(r.client)+'</span>'+'</td><td class="n">'+money(r.cpc)+'</td><td class="n">'+(r.conv==null?'—':(r.conv*100).toFixed(1)+'%')+'</td><td class="n">'+(r.value?money(r.value):'—')+'</td></tr>'}).join('');
     var t=C.tot;
     h+='<tr class="tot"><td>All sources</td><td class="n">'+money(t.spend)+'</td><td class="n">'+num(t.leads)+'</td><td class="n">'+money(per(t.spend,t.paid.leads))+'</td><td class="n">'+num(t.cm)+'</td><td class="n">'+money(per(t.spend,t.paid.cm))+'</td><td class="n">'+num(t.fp)+'</td><td class="n">'+money(per(t.spend,t.paid.fp))+'</td><td class="n">'+num(t.client)+'</td><td class="n">'+money(per(t.spend,t.paid.client))+'</td><td class="n">'+pct(t.client,t.leads)+'</td><td class="n">'+money(t.value)+'</td></tr>';
     if(!rows.length)h+='<tr><td colspan="12" class="muted">No leads in this period.</td></tr>';
     $('#srcs').innerHTML=h+'</tbody>';
+    bindClicks('#srcs td[data-step]',function(el){return {step:el.dataset.step,pipes:pipesSel(),source:el.dataset.src}});
     Array.prototype.forEach.call(document.querySelectorAll('#srcs th'),function(th){var go=function(){var k=th.dataset.k;if(S.sort===k)S.dir=-S.dir;else{S.sort=k;S.dir=k==='source'||/^cp|cpl/.test(k)?1:-1}save();render()};th.onclick=go;th.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}});
+  }
+  function bindClicks(sel,fn){Array.prototype.forEach.call(document.querySelectorAll(sel),function(el){var go=function(){peoplePanel(fn(el))};el.onclick=go;el.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}})}
+  var STEPN={leads:'New leads',cm:'Client Manager meetings',cmHeld:'Strategy sessions held',fp:'Financial Planner meetings',fpHeld:'FP Discovery held',client:'Clients'};
+  function dt(v){return v?new Date(v).toLocaleDateString('en-AU',{timeZone:'Australia/Sydney',day:'numeric',month:'short',year:'2-digit'}):'—'}
+  function peoplePanel(o){
+    var s=document.createElement('div');s.className='scrim';
+    var pn=o.pipes.length>1?'Both pipelines':(D.pipelines.find(function(p){return p.key===o.pipes[0]})||{}).name;
+    var when=D.mode==='cohort'?'Leads created '+nice(D.from)+' – '+nice(D.to):(o.step==='leads'?'Created ':'Reached ')+nice(D.from)+' – '+nice(D.to);
+    s.innerHTML='<aside class="side wide" role="dialog" aria-modal="true" aria-label="People"><div class="phead"><div><h3>'+esc(pn)+(o.source?' · '+esc(o.source):'')+'</h3><h2>'+STEPN[o.step]+' <span data-n></span></h2><p class="note">'+when+'</p></div><div class="group"><button class="btn ghost sm" type="button" data-csv disabled>Export CSV</button><button class="btn ghost sm" type="button" data-x>Close</button></div></div>'+
+      '<div data-sum></div><input type="search" placeholder="Search name, source, CM or FP" data-q aria-label="Search people"><div class="tbl"><table class="ptbl" data-t><tbody><tr><td class="muted">Loading…</td></tr></tbody></table></div></aside>';
+    document.body.appendChild(s);var close=function(){s.remove()};s.onclick=function(e){if(e.target===s)close()};s.querySelector('[data-x]').onclick=close;
+    document.addEventListener('keydown',function kk(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',kk)}});
+    api('people','&from='+D.from+'&to='+D.to+'&mode='+D.mode+'&step='+o.step+'&pipes='+o.pipes.join(',')+(o.source?'&source='+encodeURIComponent(o.source):'')).then(function(r){
+      var rows=r.rows,isC=o.step==='client';
+      s.querySelector('[data-n]').textContent='· '+rows.length;
+      var tv=rows.reduce(function(a,x){return a+(x.value||0)},0),nv=rows.filter(function(x){return x.value}).length;
+      if(isC)s.querySelector('[data-sum]').innerHTML='<div class="sumbox"><b>Client value '+money(tv)+'</b> is the total of the <b>Opportunity Value</b> field in GHL on these '+rows.length+' client'+(rows.length===1?'':'s')+' ('+nv+' have a value entered'+(nv<rows.length?'; '+(rows.length-nv)+' are blank and count as $0':'')+'). It is whatever the team records as the deal value on the opportunity.</div>';
+      var hasStep=o.step!=='leads';
+      function draw(f){var list=rows.filter(function(x){return !f||[x.name,x.source,x.cm,x.fp,x.stage,x.campaign].join(' ').toLowerCase().indexOf(f)>=0});
+        var h='<thead><tr><th>Name</th><th>Pipeline · stage now</th><th>Source</th><th>Lead created</th>'+(hasStep?'<th>Reached</th>':'')+'<th>Client Manager</th><th>Financial Planner</th><th>Status</th><th class="n">Value</th></tr></thead><tbody>';
+        h+=list.map(function(x){var out=function(n,oc){return n||oc?esc(n||'—')+(oc?'<br><span class="muted">'+esc(oc)+'</span>':''):'<span class="muted">—</span>'};
+          return '<tr><td>'+(x.contact_id?'<a href="'+r.app+encodeURIComponent(x.contact_id)+'" target="_blank" rel="noopener">'+esc(x.name||'(no name)')+'</a>':esc(x.name||'(no name)'))+'</td><td>'+(x.pipeKey==='main'?'MAIN':'FSS')+' · '+esc(x.stage)+'</td><td>'+esc(x.source)+(x.campaign?'<br><span class="muted">'+esc(x.campaign)+'</span>':'')+'</td>'+
+            '<td>'+dt(x.created_at)+'</td>'+(hasStep?'<td>'+dt(x.reached_at)+'</td>':'')+'<td>'+out(x.cm,x.cm_outcome)+'</td><td>'+out(x.fp,x.fp_outcome)+'</td><td>'+esc(x.status||'')+'</td><td class="n">'+(x.value?money(x.value):'—')+'</td></tr>'}).join('');
+        if(!list.length)h+='<tr><td colspan="9" class="muted">Nobody to show.</td></tr>';
+        else if(isC||tv)h+='<tr class="tot"><td colspan="'+(hasStep?8:7)+'">Total value</td><td class="n">'+money(list.reduce(function(a,x){return a+(x.value||0)},0))+'</td></tr>';
+        s.querySelector('[data-t]').innerHTML=h+'</tbody>'}
+      draw('');s.querySelector('[data-q]').oninput=function(){draw(this.value.toLowerCase())};
+      var cb=s.querySelector('[data-csv]');cb.disabled=false;cb.onclick=function(){var cols=['name','pipeline','stage','source','campaign','created_at','reached_at','csr','cs_outcome','cm','cm_outcome','fp','fp_outcome','status','value'],qv=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+        var csv=[cols.join(',')].concat(rows.map(function(x){return cols.map(function(c){return qv(x[c])}).join(',')})).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=(STEPN[o.step]+' '+D.from+' to '+D.to).replace(/[^a-z0-9]+/gi,'_')+'.csv';document.body.appendChild(a);a.click();a.remove()};
+    }).catch(function(e){s.querySelector('[data-t]').innerHTML='<tbody><tr><td class="err">'+esc(e.message)+'</td></tr></tbody>'});
   }
   var SUG={};
   function renderCamps(){
