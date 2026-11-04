@@ -27,6 +27,9 @@ button,select,input,textarea{font:inherit;color:inherit}
 .tile b{font-family:var(--display);font-size:26px;color:var(--ink);font-variant-numeric:tabular-nums}
 .tile span{font-size:12px;color:var(--muted)}
 .tile.red b{color:var(--warn)}
+.tile .pct{display:block;margin-top:2px;font-weight:700}
+.btn.danger{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.btn.danger.sure{background:var(--warn);color:#fff}
 .bar{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
 .group{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .l{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:3px}
@@ -122,11 +125,11 @@ td input[type=number]{width:58px}
       '<main class="wrap'+(canEdit()?'':' ro')+'"><section class="strip" id="strip"></section>'+
       '<div class="bar"><div class="group" id="g-pp"><span class="l">Paraplanner</span></div><div class="group" id="g-st"><span class="l">Work</span></div><div class="group" id="g-status"><span class="l">Status</span></div></div>'+
       '<div class="bar"><input type="search" id="q" placeholder="Search client, adviser or notes" aria-label="Search" style="flex:1;min-width:200px">'+
-      (canEdit()?'<button class="btn" id="b-new" type="button">+ New job</button>':'')+'<button class="btn ghost" id="b-csv" type="button">Export CSV</button><span class="sub" id="count"></span></div>'+
+      (canEdit()?'<button class="btn" id="b-new" type="button">+ New job</button>':'')+'<button class="btn ghost" id="b-csv" type="button">Export CSV</button><button class="btn ghost" id="b-mail" type="button">Email snapshot</button><span class="sub" id="count"></span></div>'+
       '<div class="tablewrap"><table id="tbl"></table></div><p class="sub">Changes save as soon as you make them and are logged with your name. The list refreshes every minute so you see everyone’s updates.</p></main>';
     $('#b-out').onclick=function(){api('logout').then(function(){ME=null;authScreen('login')})};
     $('#b-pw').onclick=pwPanel;if($('#b-users'))$('#b-users').onclick=usersPanel;if($('#b-new'))$('#b-new').onclick=function(){jobPanel(null)};
-    $('#b-csv').onclick=csv;$('#q').value=S.q;$('#q').oninput=function(){S.q=this.value.toLowerCase();renderTable()};
+    $('#b-csv').onclick=csv;$('#b-mail').onclick=mailPanel;$('#q').value=S.q;$('#q').oninput=function(){S.q=this.value.toLowerCase();renderTable()};
     var pps=['','Mine'].concat(L.paraplanner);
     pps.forEach(function(p){if(p==='Mine'&&L.paraplanner.indexOf(ME.name.split(' ')[0])<0)return;var b=chip(p===''?'Everyone':p==='Mine'?'My jobs':p,function(){S.pp=p==='Mine'?ME.name.split(' ')[0]:p;save();render()});b.dataset.v=p==='Mine'?ME.name.split(' ')[0]:p;$('#g-pp').appendChild(b)});
     [''].concat(L.stream).forEach(function(s){var b=chip(s||'All',function(){S.stream=s;save();render()});b.dataset.v=s;$('#g-st').appendChild(b)});
@@ -145,16 +148,28 @@ td input[type=number]{width:58px}
     var open=JOBS.filter(isOpen),scope=S.pp?open.filter(function(j){return (j.paraplanner||'Unallocated')===S.pp}):open;
     var exp=scope.filter(function(j){var d=daysTo(j.fee_expiry);return d!=null&&d<=7});
     var tiles=[['Open jobs',scope.length,'','open',''],['Urgent',scope.filter(function(j){return j.priority==='Urgent'}).length,'','open',''],['Fees expired / ≤7 days',exp.length,'red','open','fee'],['On hold',scope.filter(function(j){return j.status==='On Hold'}).length,'','On Hold',''],['In progress',scope.filter(function(j){return j.status==='In Progress'}).length,'','In Progress','']];
-    if(!S.pp)L.paraplanner.forEach(function(p){tiles.push([p,open.filter(function(j){return (j.paraplanner||'Unallocated')===p}).length,'','open','pp:'+p])});
-    $('#strip').innerHTML=tiles.map(function(t,i){return '<button type="button" class="tile'+(t[2]&&t[1]?' red':'')+'" data-i="'+i+'"><small>'+esc(t[0])+'</small><b>'+t[1]+'</b></button>'}).join('');
+    if(!S.pp)L.paraplanner.forEach(function(p){var n=open.filter(function(j){return (j.paraplanner||'Unallocated')===p}).length;tiles.push([p,n,'','open','pp:'+p,(open.length?Math.round(n/open.length*100):0)+'% of open jobs'])});
+    $('#strip').innerHTML=tiles.map(function(t,i){return '<button type="button" class="tile'+(t[2]&&t[1]?' red':'')+'" data-i="'+i+'"><small>'+esc(t[0])+'</small><b>'+t[1]+'</b>'+(t[5]?'<span class="pct">'+t[5]+'</span>':'')+'</button>'}).join('');
     Array.prototype.forEach.call($('#strip').children,function(b){b.onclick=function(){var t=tiles[+b.dataset.i];S.status=t[3];if(t[4]==='fee'){S.sort='fee_expiry';S.dir=1}if(t[4].indexOf('pp:')===0)S.pp=t[4].slice(3);save();render()}});
     renderTable();
   }
   var COLS=[['priority_no','#'],['client','Client'],['paraplanner','Paraplanner'],['stream','Work'],['doc_type','Type'],['strategy','Strategy'],['priority','Priority'],['status','Status'],['date_requested','Requested'],['fee_expiry','Fees expire'],['notes','Notes'],['updated_at','Updated']];
   function sel(f,v,j){return '<select class="editable st-'+(f==='status'?String(v||'').replace(/\s/g,''):'')+'" data-id="'+j.id+'" data-f="'+f+'" aria-label="'+f+'"><option value=""></option>'+L[f].map(function(o){return '<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select>'}
+  function sortedRows(){return filtered().sort(function(a,b){var k=S.sort,x=a[k],y=b[k];if(k==='fee_expiry'||k==='priority_no'){if(x==null&&y==null)return a.id-b.id;if(x==null)return 1;if(y==null)return -1}
+      x=x==null?'':x;y=y==null?'':y;return (x>y?1:x<y?-1:0)*S.dir||a.id-b.id})}
+  function viewLabel(){var st=S.status==='open'?'Open':S.status==='all'?'All statuses':S.status;return [S.pp||'Everyone',S.stream||'All work',st].join(' · ')+(S.q?' · “'+S.q+'”':'')}
+  function mailPanel(){var rows=sortedRows();
+    var s=panel('<div style="display:flex;justify-content:space-between"><h2>Email snapshot</h2><button class="btn ghost" type="button" data-x>Close</button></div>'+
+      '<p class="sub">Sends the <b>'+rows.length+' job'+(rows.length===1?'':'s')+'</b> in your current view ('+esc(viewLabel())+') as a table, in the order shown.</p>'+
+      '<div class="form"><label class="full">Send to<input id="m-to" type="email" placeholder="name@smartmoneygroup.com.au" autocomplete="email"></label><label class="full">Message (optional)<textarea id="m-note" rows="3" placeholder="e.g. Here’s where the SOAs are at this week"></textarea></label></div>'+
+      '<div style="display:flex;gap:8px"><button class="btn dark" type="button" data-send'+(rows.length?'':' disabled')+'>Send email</button></div><div class="err" data-err hidden></div>');
+    s.querySelector('[data-x]').onclick=function(){s.remove()};
+    s.querySelector('[data-send]').onclick=function(){var b=this,er=s.querySelector('[data-err]'),to=s.querySelector('#m-to').value.trim();
+      if(!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(to)){er.hidden=false;er.textContent='Enter a valid email address.';return}
+      b.disabled=true;b.textContent='Sending…';
+      api('snapshot',{body:{to:to,note:s.querySelector('#m-note').value,view:viewLabel(),ids:rows.map(function(j){return j.id})}}).then(function(r){s.remove();toast('Snapshot sent to '+to)}).catch(function(e){b.disabled=false;b.textContent='Send email';er.hidden=false;er.textContent=e.message})}}
   function renderTable(){
-    var rows=filtered().sort(function(a,b){var k=S.sort,x=a[k],y=b[k];if(k==='fee_expiry'||k==='priority_no'){if(x==null&&y==null)return a.id-b.id;if(x==null)return 1;if(y==null)return -1}
-      x=x==null?'':x;y=y==null?'':y;return (x>y?1:x<y?-1:0)*S.dir||a.id-b.id});
+    var rows=sortedRows();
     $('#count').textContent=rows.length+' job'+(rows.length===1?'':'s');
     var ed=canEdit();
     var h='<thead><tr>'+COLS.map(function(c){return '<th data-k="'+c[0]+'" aria-sort="'+(S.sort===c[0]?(S.dir>0?'ascending':'descending'):'none')+'">'+c[1]+(S.sort===c[0]?(S.dir>0?' ▲':' ▼'):'')+'</th>'}).join('')+'</tr></thead><tbody>';
@@ -192,7 +207,7 @@ td input[type=number]{width:58px}
     var go=function(d){var j=d?d.job:{stream:S.stream||'SOA / ROA',paraplanner:S.pp||'',status:'Not Started',date_requested:today};
       var s=panel('<div style="display:flex;justify-content:space-between;gap:10px;align-items:start"><h2>'+(id?esc(j.client):'New job')+'</h2><button class="btn ghost" type="button" data-x>Close</button></div>'+
         '<div class="form">'+FORM.map(function(f){return field(f[0],f[1],j[f[0]],f[2],f[3])}).join('')+'</div>'+
-        (canEdit()?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn dark" type="button" data-save>'+(id?'Save changes':'Create job')+'</button>'+(id?'<button class="btn ghost" type="button" data-arch>'+(j.archived?'Restore':'Archive')+'</button>':'')+'</div><div class="err" data-err hidden></div>':'')+
+        (canEdit()?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn dark" type="button" data-save>'+(id?'Save changes':'Create job')+'</button>'+(id?'<button class="btn ghost" type="button" data-arch>'+(j.archived?'Restore':'Archive')+'</button><button class="btn danger" type="button" data-del style="margin-left:auto">Delete job</button>':'')+'</div><div class="err" data-err hidden></div>':'')+
         (id?'<section class="card"><h3>Notes and updates</h3><div data-cm>'+(d.comments.length?d.comments.map(function(c){return '<div class="cm"><b>'+esc(c.user_name)+'</b> <span>'+new Date(c.at).toLocaleString('en-AU',{timeZone:'Australia/Sydney',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})+'</span><div>'+esc(c.body)+'</div></div>'}).join(''):'<p class="sub">No notes yet.</p>')+'</div>'+
           '<textarea id="newc" rows="2" placeholder="Add a note, e.g. waiting on client to sign the FF"></textarea><button class="btn" type="button" data-c style="align-self:flex-start">Add note</button></section>'+
           '<section class="card"><h3>History</h3><div class="hist">'+(d.history.map(function(h){return '<div>'+new Date(h.at).toLocaleString('en-AU',{timeZone:'Australia/Sydney',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})+' · <b>'+esc(h.user_name)+'</b> '+(h.field==='created'?'created the job':'changed '+esc(h.field.replace('_',' '))+' from “'+esc(h.old_value||'—')+'” to “'+esc(h.new_value||'—')+'”')+'</div>'}).join('')||'—')+'</div></section>':''));
@@ -201,6 +216,9 @@ td input[type=number]{width:58px}
         var er=s.querySelector('[data-err]');if(!body.client.trim()){er.hidden=false;er.textContent='Enter the client’s name.';return}
         (id?api('update',{qs:'&id='+id,body:body}):api('job',{body:body})).then(function(){s.remove();toast(id?'Saved':'Job created');load()}).catch(function(e){er.hidden=false;er.textContent=e.message})};
       var ar=s.querySelector('[data-arch]');if(ar)ar.onclick=function(){api('update',{qs:'&id='+id,body:{archived:!j.archived}}).then(function(){s.remove();toast(j.archived?'Restored':'Archived');load()})};
+      var dl=s.querySelector('[data-del]');if(dl)dl.onclick=function(){
+        if(!dl.classList.contains('sure')){dl.classList.add('sure');dl.textContent='Click again to delete permanently';setTimeout(function(){if(dl.isConnected){dl.classList.remove('sure');dl.textContent='Delete job'}},5000);return}
+        dl.disabled=true;api('delete',{qs:'&id='+id,body:{}}).then(function(){s.remove();toast('Job deleted');load()}).catch(function(e){dl.disabled=false;toast(e.message)})};
       var cb=s.querySelector('[data-c]');if(cb)cb.onclick=function(){var t=s.querySelector('#newc').value;api('comment',{qs:'&id='+id,body:{body:t}}).then(function(){s.remove();load();jobPanel(id)}).catch(function(e){toast(e.message)})};
     };
     if(id)api('job',{qs:'&id='+id}).then(go).catch(function(e){toast(e.message)});else go(null);

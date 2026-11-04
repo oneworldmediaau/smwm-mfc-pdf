@@ -8,8 +8,9 @@ import { fileURLToPath } from 'url';
 import { ensureSchema } from '../lib/db.js';
 import {
   ppSchema, LISTS, currentUser, publicUser, sessionCookie, clearCookie, login, pwProblem, setPassword,
-  listUsers, saveUser, resetUser, userCount, createAdmin, listJobs, getJob, createJob, updateJob, addComment, importJobs, renumber,
+  listUsers, saveUser, resetUser, userCount, createAdmin, listJobs, getJob, createJob, updateJob, addComment, importJobs, renumber, deleteJob,
 } from '../lib/pp.js';
+import { sendSnapshot } from '../lib/pp-alerts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const json = (res, code, body) => { res.setHeader('Cache-Control', 'no-store'); return res.status(code).json(body); };
@@ -66,6 +67,8 @@ export default async function handler(req, res) {
     if (a === 'job' && req.method === 'POST') return json(res, 200, { id: await createJob(u, body) });
     if (a === 'update' && req.method === 'POST') return json(res, 200, { changed: await updateJob(u, +req.query.id, body || {}) });
     if (a === 'comment' && req.method === 'POST') { await addComment(u, +req.query.id, body.body); return json(res, 200, { ok: true }); }
+    if (a === 'delete' && req.method === 'POST') return json(res, 200, await deleteJob(u, +req.query.id));
+    if (a === 'snapshot' && req.method === 'POST') return json(res, 200, await sendSnapshot(u, body.to, body.ids, body.view, body.note));
 
     if (u.role !== 'admin') return json(res, 403, { error: 'Only admins can do that.' });
     if (a === 'users') return json(res, 200, { users: await listUsers() });
