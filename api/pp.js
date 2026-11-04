@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { ensureSchema } from '../lib/db.js';
 import {
   ppSchema, LISTS, currentUser, publicUser, sessionCookie, clearCookie, login, pwProblem, setPassword,
-  listUsers, saveUser, resetUser, userCount, createAdmin, listJobs, getJob, createJob, updateJob, addComment, importJobs,
+  listUsers, saveUser, resetUser, userCount, createAdmin, listJobs, getJob, createJob, updateJob, addComment, importJobs, renumber,
 } from '../lib/pp.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -37,6 +37,10 @@ export default async function handler(req, res) {
     if (a === 'seed' && req.method === 'POST') { // one-off import of the spreadsheet, using the setup key
       if (!body.key || body.key !== process.env.MFC_SECRET) return json(res, 401, { error: 'Setup key is wrong.' });
       return json(res, 200, { imported: await importJobs({ name: 'Spreadsheet import', role: 'admin' }, body.jobs || [], !!body.replace) });
+    }
+    if (a === 'renumber' && req.method === 'POST') { // one-off tidy of priority numbers, using the setup key
+      if (!body.key || body.key !== process.env.MFC_SECRET) return json(res, 401, { error: 'Setup key is wrong.' });
+      return json(res, 200, await renumber({ name: 'Priority tidy-up' }));
     }
     if (a === 'login' && req.method === 'POST') {
       const r = await login(body.email, body.password); if (r.error) return json(res, 401, { error: r.error });
