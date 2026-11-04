@@ -112,7 +112,7 @@ function html(rows, start, end) {
 <tr><td style="padding:20px 28px 6px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${summary}</tr></table></td></tr>
 <tr><td style="padding:14px 28px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 <tr><th style="${head}">Lead</th><th style="${head}">Rep / Source</th><th style="${head}">Created</th><th style="${head}">First outbound call</th><th style="${head}">Time to call (business hrs)</th></tr>${body}</table>
-<p style="font-family:Arial,sans-serif;font-size:11px;color:#5E6B60;margin-top:14px">Time to call counts business hours only (Mon–Fri 10am–6pm Sydney, excluding NSW public holidays): a lead that arrives after hours starts the clock at 10am the next working day. Clock time is shown underneath.</p></td></tr>
+<p style="font-family:Arial,sans-serif;font-size:11px;color:#5E6B60;margin-top:14px">Leads marked DNQ by customer service with no call are left out. Time to call counts business hours only (Mon–Fri 10am–6pm Sydney, excluding NSW public holidays): a lead that arrives after hours starts the clock at 10am the next working day. Clock time is shown underneath.</p></td></tr>
 </table></td></tr></table></body></html>`;
 }
 async function reportContactId() {
@@ -140,6 +140,8 @@ export default async function handler(req, res) {
     for (const o of ops) {
       const created = new Date(o.createdAt).getTime();
       const call = await firstOutboundCall(o.contactId, created);
+      const outcome = ((o.customFields || []).find((c) => c.id === 'cjUKFO9YUNYmIZexnK2b') || {});
+      if (!call && String(outcome.fieldValueString || outcome.fieldValue || outcome.value || '') === 'DNQ') continue; // not qualified, no call needed
       rows.push({ source: o.source || '—', name: (o.contact && o.contact.name) || o.name, phone: o.contact && o.contact.phone, rep: csrOf(o), created, call, ms: call ? businessMs(created, call.t) : null, clock: call ? call.t - created : null, wait: call ? null : businessMs(created, Date.now()), caller: call ? await userName(call.userId) : '' });
     }
     rows.sort((a, b) => a.created - b.created);

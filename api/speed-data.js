@@ -1,7 +1,7 @@
 // GET /api/speed-data?key=...&from=YYYY-MM-DD&to=YYYY-MM-DD   (Sydney dates, inclusive)
 // Returns opportunities created in the range and in the previous period of the same length,
 // with first outbound call details. Call lookups are cached; "pending" > 0 means call again for the rest.
-import { LOCATION_ID, opportunitiesBetween, csrOf, channelOf, users, loadCache, saveCache, fillCalls, sydMidnight, sydYmd, businessMs } from '../lib/speed.js';
+import { LOCATION_ID, opportunitiesBetween, csrOf, csOutcomeOf, channelOf, users, loadCache, saveCache, fillCalls, sydMidnight, sydYmd, businessMs } from '../lib/speed.js';
 
 function ok(req) {
   const k = req.query.key;
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       const created = new Date(o.createdAt).getTime(), e = cache[o.id];
       return {
         id: o.id, contactId: o.contactId, name: (o.contact && o.contact.name) || o.name, phone: (o.contact && o.contact.phone) || '',
-        rep: csrOf(o) || 'Unassigned', source: o.source || '—', channel: channelOf(o), status: o.status,
+        rep: csrOf(o) || 'Unassigned', outcome: csOutcomeOf(o), source: o.source || '—', channel: channelOf(o), status: o.status,
         created, call: e && e.c ? e.c : null, caller: e && e.u ? (U[e.u] || 'Team member') : '', dur: e ? e.d : 0,
         checked: !!e,
         biz: e && e.c ? businessMs(created, e.c) : null,
@@ -38,9 +38,10 @@ export default async function handler(req, res) {
       };
     };
     const cur = [], prev = [];
-    all.forEach((o) => { const t = new Date(o.createdAt).getTime(); (t >= start ? cur : prev).push(row(o)); });
+    // Leads marked DNQ by customer service with no outbound call are excluded (deemed not qualified)
+    all.forEach((o) => { const e = cache[o.id]; if (e && !e.c && csOutcomeOf(o) === 'DNQ') return; const t = new Date(o.createdAt).getTime(); (t >= start ? cur : prev).push(row(o)); });
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ app: (process.env.GHL_APP_URL || 'https://app.gohighlevel.com').replace(/\/$/, '') + '/v2/location/' + LOCATION_ID + '/contacts/detail/', from, to, prevFrom: pFrom, prevTo: pTo, days, pending, rows: cur, prev, generated: Date.now() });
+    return res.status(200).json({ app: (process.env.GHL_APP_URL || 'https://crm.smartmoneygroup.com.au').replace(/\/$/, '') + '/v2/location/' + LOCATION_ID + '/contacts/detail/', from, to, prevFrom: pFrom, prevTo: pTo, days, pending, rows: cur, prev, generated: Date.now() });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: e.message });
