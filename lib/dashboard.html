@@ -53,6 +53,9 @@ th.sort:hover{color:var(--ink)}
 td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 td b{color:var(--ink)}
+a.lead{color:var(--ink);font-weight:800;text-decoration:none;border-bottom:1px solid var(--gold)}
+a.lead:hover{color:var(--goldink)}
+a.lead:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .muted{color:var(--muted)}
 .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:800;font-size:12px;white-space:nowrap}
 .p-good{background:var(--goodbg);color:var(--good)}.p-ok{background:#EAF0EA;color:var(--ink2)}.p-amber{background:var(--amberbg);color:var(--goldink)}.p-bad{background:var(--warnbg);color:var(--warn)}.p-wait{background:var(--soft);color:var(--muted)}
@@ -95,7 +98,7 @@ td b{color:var(--ink)}
   </section>
 
   <section class="panel">
-    <div class="listhead"><h2 id="list-h">Leads</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="q" type="search" placeholder="Search name, phone or source" aria-label="Search leads"><button class="btn ghost" id="csv" type="button">Download CSV</button></div></div>
+    <div class="listhead"><h2 id="list-h">Leads</h2><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="group" id="stat"><button type="button" class="chip" data-s="all">All</button><button type="button" class="chip" data-s="not">Not called</button><button type="button" class="chip" data-s="called">Called</button></div><input id="q" type="search" placeholder="Search name, phone or source" aria-label="Search leads"><button class="btn ghost" id="csv" type="button">Download CSV</button></div></div>
     <div class="tbl"><table id="t-leads"></table></div>
     <p class="note">Time to call = opportunity created → first outbound call to that contact through GHL. In business-hours mode only Mon–Fri 10am–6pm counts: a lead that arrives at night starts the clock at 10am the next working day, and a call made before 10am counts as 0. Calls made outside GHL can’t be seen. Times are Sydney time.</p>
   </section>
@@ -106,7 +109,7 @@ td b{color:var(--ink)}
   var KEY=@@KEY@@, $=function(id){return document.getElementById(id)};
   var REPS=["Matt Horne","Jarrod Bray","Jenny H","Unassigned"], DEFAULT_REPS=["Matt Horne","Jarrod Bray"];
   var REPCOL={"Matt Horne":"#2E5A40","Jarrod Bray":"#C8973F","Jenny H":"#6F8FA0","Unassigned":"#9AA59C"};
-  var S={mode:"biz",from:null,to:null,compare:true,reps:DEFAULT_REPS.slice(),source:"",q:"",sort:"created",dir:-1,data:null,loading:false};
+  var S={status:"all",mode:"biz",from:null,to:null,compare:true,reps:DEFAULT_REPS.slice(),source:"",q:"",sort:"created",dir:-1,data:null,loading:false};
   try{var saved=JSON.parse(localStorage.getItem("stl")||"{}");if(saved.reps)S.reps=saved.reps;if(saved.compare!=null)S.compare=saved.compare;if(saved.mode)S.mode=saved.mode}catch(e){}
 
   // ---- dates (Sydney)
@@ -143,6 +146,7 @@ td b{color:var(--ink)}
   $("compare").checked=S.compare;$("compare").onchange=function(){S.compare=this.checked;save();render()};
   Array.prototype.forEach.call(document.querySelectorAll("#mode .chip"),function(b){b.onclick=function(){S.mode=b.dataset.m;save();render()}});
   $("source").onchange=function(){S.source=this.value;render()};
+  Array.prototype.forEach.call(document.querySelectorAll("#stat .chip"),function(b){b.onclick=function(){S.status=b.dataset.s;renderList()}});
   $("q").oninput=function(){S.q=this.value.toLowerCase();renderList()};
   $("refresh").onclick=function(){load()};
   $("csv").onclick=csv;
@@ -222,12 +226,13 @@ td b{color:var(--ink)}
     $("t-src").innerHTML=h;
   }
   var COLS=[["name","Lead"],["rep","Rep"],["source","Source"],["created","Created"],["call","First outbound call"],["ttc","Time to call"]];
-  function listRows(){var D=S.data;if(!D)return[];return filt(D.rows).filter(function(r){return !S.q||(r.name+" "+r.phone+" "+r.source+" "+r.channel).toLowerCase().indexOf(S.q)>=0}).map(function(r){r.ttc=r.call!=null?TT(r):(r.checked?9e15:9e16);return r})
+  function listRows(){var D=S.data;if(!D)return[];return filt(D.rows).filter(function(r){return S.status==="all"||(S.status==="not"?(r.checked&&r.call==null):r.call!=null)}).filter(function(r){return !S.q||(r.name+" "+r.phone+" "+r.source+" "+r.channel).toLowerCase().indexOf(S.q)>=0}).map(function(r){r.ttc=r.call!=null?TT(r):(r.checked?9e15:9e16);return r})
     .sort(function(x,y){var a=x[S.sort],b=y[S.sort];if(a==null)a=9e16;if(b==null)b=9e16;return (a>b?1:a<b?-1:0)*S.dir})}
   function renderList(){
-    var rows=listRows();$("list-h").textContent="Leads ("+rows.length+")";
+    var rows=listRows();$("list-h").textContent=(S.status==="not"?"Not called":S.status==="called"?"Called leads":"Leads")+" ("+rows.length+")";
+    Array.prototype.forEach.call(document.querySelectorAll("#stat .chip"),function(b){b.setAttribute("aria-pressed",String(b.dataset.s===S.status))});
     var h='<tr>'+COLS.map(function(c){return '<th class="sort" data-k="'+c[0]+'" aria-sort="'+(S.sort===c[0]?(S.dir>0?"ascending":"descending"):"none")+'">'+c[1]+(S.sort===c[0]?(S.dir>0?" ▲":" ▼"):"")+'</th>'}).join("")+'</tr>';
-    h+=rows.map(function(r){return '<tr><td><b>'+esc(r.name)+'</b><br><span class="muted">'+esc(r.phone)+'</span></td><td>'+esc(r.rep)+'</td><td>'+esc(r.source)+(r.channel?'<br><span class="muted">'+esc(r.channel)+'</span>':'')+'</td><td>'+when(r.created)+'</td><td>'+(r.call?when(r.call)+'<br><span class="muted">'+esc(r.caller)+(r.dur?" · "+(r.dur<60?r.dur+" sec":Math.round(r.dur/60)+" min"):"")+'</span>':'<span class="muted">–</span>')+'</td><td>'+pill(r)+'</td></tr>'}).join("")||'<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No leads match these filters.</td></tr>';
+    h+=rows.map(function(r){return '<tr><td>'+(S.data.app&&r.contactId?'<a class="lead" href="'+esc(S.data.app+r.contactId)+'" target="_blank" rel="noopener">'+esc(r.name)+' ↗</a>':'<b>'+esc(r.name)+'</b>')+'<br><span class="muted">'+esc(r.phone)+'</span></td><td>'+esc(r.rep)+'</td><td>'+esc(r.source)+(r.channel?'<br><span class="muted">'+esc(r.channel)+'</span>':'')+'</td><td>'+when(r.created)+'</td><td>'+(r.call?when(r.call)+'<br><span class="muted">'+esc(r.caller)+(r.dur?" · "+(r.dur<60?r.dur+" sec":Math.round(r.dur/60)+" min"):"")+'</span>':'<span class="muted">–</span>')+'</td><td>'+pill(r)+'</td></tr>'}).join("")||'<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No leads match these filters.</td></tr>';
     $("t-leads").innerHTML=h;
     Array.prototype.forEach.call($("t-leads").querySelectorAll("th.sort"),function(th){th.onclick=function(){var k=th.dataset.k;if(S.sort===k)S.dir=-S.dir;else{S.sort=k;S.dir=k==="created"||k==="call"?-1:1}renderList()}});
   }
