@@ -9,4 +9,5 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Run sync
-        run: curl -fsS --max-time 120 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://smwm-mfc-pdf-five.vercel.app/api/sync
+        run: |
+          curl -fsS --max-time 120 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://smwm-mfc-pdf-five.vercel.app/api/sync
