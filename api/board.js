@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       const to = ymd(req.query.to) ? req.query.to : today;
       const from = ymd(req.query.from) ? req.query.from : addDays(to, -29);
       if (from > to) return res.status(400).json({ error: 'Start date is after end date.' });
-      return res.status(200).json(await boardData(from, to, req.query.compare !== '0'));
+      return res.status(200).json(await boardData(from, to, req.query.compare !== '0', req.query.mode));
     }
     if (a === 'suggest') return res.status(200).json({ suggestions: await suggestions() });
     if (a === 'links' && req.method === 'POST') return res.status(200).json(await setLinks(body.platform, body.campaign_id, body.sources, 'dashboard'));

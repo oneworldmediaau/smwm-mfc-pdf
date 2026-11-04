@@ -101,6 +101,7 @@ td b{color:var(--ink)}
     <div class="group" id="presets"><span class="l">Range</span></div>
     <div class="group"><input type="date" id="from" aria-label="From date"><span class="muted">to</span><input type="date" id="to" aria-label="To date"><button class="btn ghost sm" id="apply" type="button">Apply</button></div>
     <div class="group" id="pipes"><span class="l">Pipeline</span></div>
+    <div class="group" id="modes"><span class="l">Count by</span></div>
     <label class="tog"><input type="checkbox" id="compare" checked> Compare to previous period</label>
   </div>
   <div id="banners" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -137,8 +138,8 @@ td b{color:var(--ink)}
     ['Last 30 days',add(T,-29),T],['This month',ym(TY,TM),T],['Last month',ym(TY,TM-1),add(ym(TY,TM),-1)],
     ['This quarter',ym(TY,q0),T],['Last quarter',ym(TY,q0-3),add(ym(TY,q0),-1)],['Last 90 days',add(T,-89),T],
     ['This financial year',fyStart+'-07-01',T],['Last financial year',(fyStart-1)+'-07-01',fyStart+'-06-30']];
-  var S={from:PRESETS[0][1],to:PRESETS[0][2],preset:0,pipes:'both',compare:true,sort:'spend',dir:-1,cf:'spend',cq:''};
-  try{var sv=JSON.parse(localStorage.getItem('board_v1')||'{}');['preset','pipes','compare','sort','dir','cf'].forEach(function(k){if(k in sv)S[k]=sv[k]});if(S.preset>=0&&PRESETS[S.preset]){S.from=PRESETS[S.preset][1];S.to=PRESETS[S.preset][2]}else if(sv.from){S.from=sv.from;S.to=sv.to}}catch(e){}
+  var S={from:PRESETS[0][1],to:PRESETS[0][2],preset:0,pipes:'both',mode:'activity',compare:true,sort:'spend',dir:-1,cf:'spend',cq:''};
+  try{var sv=JSON.parse(localStorage.getItem('board_v1')||'{}');['preset','pipes','mode','compare','sort','dir','cf'].forEach(function(k){if(k in sv)S[k]=sv[k]});if(S.preset>=0&&PRESETS[S.preset]){S.from=PRESETS[S.preset][1];S.to=PRESETS[S.preset][2]}else if(sv.from){S.from=sv.from;S.to=sv.to}}catch(e){}
   function save(){try{localStorage.setItem('board_v1',JSON.stringify(S))}catch(e){}}
   var D=null;
 
@@ -169,7 +170,7 @@ td b{color:var(--ink)}
   function render(){
     if(!D)return;
     var C=agg(D.cur),Pv=S.compare?agg(D.prev):null,t=C.tot,p=Pv&&Pv.tot;
-    $('#range-label').textContent=nice(D.from)+' – '+nice(D.to)+' · '+D.days+' days'+(S.compare?' · compared with '+nice(D.prevFrom)+' – '+nice(D.prevTo):'');
+    $('#range-label').textContent=(D.mode==='cohort'?'Leads created ':'Activity ')+nice(D.from)+' – '+nice(D.to)+' · '+D.days+' days'+(S.compare?' · compared with '+nice(D.prevFrom)+' – '+nice(D.prevTo):'');
     // banners
     var b='',ms=D.sync.meta_sync,gs=D.sync.google_sync;
     if(!ms)b+='<div class="banner amber">Meta spend isn’t connected yet, so costs only include Google. Once the Meta token is added, click <b>Refresh ad spend</b>.</div>';
@@ -197,7 +198,7 @@ td b{color:var(--ink)}
       var f={leads:0,cm:0,cmHeld:0,fp:0,fpHeld:0,client:0,value:0},sp=0,fp0={leads:0,cm:0,fp:0,client:0},spp=0,pf=D.cur.funnel[pl.key]||{},LS=linkedSources();
       Object.keys(pf).forEach(function(s){Object.keys(f).forEach(function(k){f[k]+=pf[s][k]||0});if(LS[s])['leads','cm','fp','client'].forEach(function(k){fp0[k]+=pf[s][k]||0})});
       Object.keys(D.cur.alloc.bySrc).forEach(function(k){if(k.indexOf(pl.key+'|')===0)sp+=D.cur.alloc.bySrc[k].spend});
-      var steps=[['leads','New leads','Created in this period','lead'],['cm','Client Manager meeting',pl.labels.cm+' or later','cm'],['fp','Financial Planner meeting',pl.labels.fp+' or later','fp'],['client','Client',pl.labels.client,'client']];
+      var act=D.mode!=='cohort',steps=[['leads','New leads','Created in this period','lead'],['cm','Client Manager meeting',act?'Reached '+pl.labels.cm+' in this period':pl.labels.cm+' or later','cm'],['fp','Financial Planner meeting',act?'Reached '+pl.labels.fp+' in this period':pl.labels.fp+' or later','fp'],['client','Client',act?'Became a client ('+pl.labels.client+') in this period':pl.labels.client,'client']];
       var prevStep=null;
       var h=steps.map(function(s){var v=f[s[0]],w=f.leads?Math.max(v/f.leads*100,v?1.5:0):0,held=s[0]==='cm'&&pl.labels.cmHeld?f.cmHeld:s[0]==='fp'&&pl.labels.fpHeld?f.fpHeld:null;
         var m='<div class="meta">'+(prevStep?'<span><b>'+pct(v,f[prevStep])+'</b> of previous step</span>':'')+(s[0]!=='leads'?'<span><b>'+pct(v,f.leads)+'</b> of leads</span>':'')+(sp?'<span>Cost each <b>'+money(per(sp,fp0[s[0]]))+'</b></span>':'')+(held!=null?'<span>Held: <b>'+num(held)+'</b></span>':'')+'</div>';
@@ -266,6 +267,7 @@ td b{color:var(--ink)}
   // ---- controls
   PRESETS.forEach(function(p,i){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[0];b.onclick=function(){S.preset=i;S.from=p[1];S.to=p[2];save();load()};b.dataset.i=i;$('#presets').appendChild(b)});
   [['both','Both'],['main','MAIN'],['fss','Free Strategy Session']].forEach(function(p){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[1];b.dataset.v=p[0];b.onclick=function(){S.pipes=p[0];save();syncControls();render()};$('#pipes').appendChild(b)});
+  [['activity','When it happened'],['cohort','Lead created date']].forEach(function(p){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[1];b.dataset.v=p[0];b.title=p[0]==='activity'?'Meetings and clients counted in the period they happened, whenever the lead came in':'Follows the leads created in this period through to meetings and clients';b.onclick=function(){S.mode=p[0];save();load()};$('#modes').appendChild(b)});
   [['spend','Spent in this period'],['unlinked','Not linked'],['all','All campaigns']].forEach(function(p){var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[1];b.dataset.v=p[0];b.onclick=function(){S.cf=p[0];save();renderCamps()};$('#cfilter').appendChild(b)});
   $('#csearch').oninput=function(){S.cq=this.value.toLowerCase();renderCamps()};
   $('#apply').onclick=function(){var f=$('#from').value,t=$('#to').value;if(!f||!t||f>t){toast('Choose a start date before the end date');return}S.preset=-1;S.from=f;S.to=t;save();load()};
@@ -274,10 +276,11 @@ td b{color:var(--ink)}
   $('#refresh').onclick=function(){var b=this;b.disabled=true;b.textContent='Refreshing…';api('refresh','',{}).then(function(r){var m=r.meta||{};toast(m.saved!=null?'Meta updated ('+m.saved+' rows)':(m.skipped||'Done'));return load()}).catch(function(e){toast(e.message)}).then(function(){b.disabled=false;b.textContent='Refresh ad spend'})};
   function syncControls(){Array.prototype.forEach.call(document.querySelectorAll('#presets .chip'),function(b){b.setAttribute('aria-pressed',String(+b.dataset.i===S.preset))});
     Array.prototype.forEach.call(document.querySelectorAll('#pipes .chip'),function(b){b.setAttribute('aria-pressed',String(b.dataset.v===S.pipes))});
+    Array.prototype.forEach.call(document.querySelectorAll('#modes .chip'),function(b){b.setAttribute('aria-pressed',String(b.dataset.v===S.mode))});
     $('#from').value=S.from;$('#to').value=S.to;$('#compare').checked=S.compare}
   function ago(ms){if(!ms)return null;var m=Math.round((Date.now()-ms)/60000);return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'}
   function load(){syncControls();$('#app').classList.add('loading');
-    return Promise.all([api('data','&from='+S.from+'&to='+S.to+'&compare='+(S.compare?1:0)),api('suggest')]).then(function(r){D=r[0];SUG={};(r[1].suggestions||[]).forEach(function(x){var k=x.platform+'|'+x.id;(SUG[k]=SUG[k]||[]).push(x)});
+    return Promise.all([api('data','&from='+S.from+'&to='+S.to+'&compare='+(S.compare?1:0)+'&mode='+S.mode),api('suggest')]).then(function(r){D=r[0];SUG={};(r[1].suggestions||[]).forEach(function(x){var k=x.platform+'|'+x.id;(SUG[k]=SUG[k]||[]).push(x)});
       var u=[];if(D.sync.last_sync&&D.sync.last_sync.at)u.push('GHL '+ago(D.sync.last_sync.at));if(D.sync.meta_sync)u.push('Meta '+ago(D.sync.meta_sync.at));if(D.sync.google_sync)u.push('Google '+ago(D.sync.google_sync.at));$('#updated').textContent=u.length?'Updated: '+u.join(' · '):'';
       render()}).catch(function(e){$('#banners').innerHTML='<div class="banner err">Couldn’t load the report: '+esc(e.message)+'</div>'}).then(function(){$('#app').classList.remove('loading')})}
   load();
