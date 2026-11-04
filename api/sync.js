@@ -5,6 +5,7 @@ import { runSync, oppsCreatedBetween, upsertOpps } from '../lib/store.js';
 import { ensureSchema, getState, setState } from '../lib/db.js';
 import { sydMidnight } from '../lib/speed.js';
 import { maybeSendPpAlerts } from '../lib/pp-alerts.js';
+import { maybeSyncMeta } from '../lib/ads.js';
 
 function authed(req) {
   const auth = req.headers.authorization || '';
@@ -36,6 +37,7 @@ export default async function handler(req, res) {
     await setState('sync_lock', Date.now());
     const log = await runSync({ budgetMs: 45000 });
     try { log.pp = await maybeSendPpAlerts(); } catch (e) { log.ppError = e.message; }
+    try { log.meta = await maybeSyncMeta(); } catch (e) { log.metaError = e.message; }
     await setState('sync_lock', 0);
     return res.status(200).json({ ok: true, log });
   } catch (e) {
