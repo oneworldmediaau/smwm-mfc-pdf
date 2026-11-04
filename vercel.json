@@ -19,6 +19,10 @@
     },
     "api/pp.js": {
       "includeFiles": "lib/**"
+    },
+    "api/board.js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/**"
     }
   },
   "crons": [
