@@ -4,6 +4,7 @@
 import { runSync, oppsCreatedBetween, upsertOpps } from '../lib/store.js';
 import { ensureSchema, getState, setState } from '../lib/db.js';
 import { sydMidnight } from '../lib/speed.js';
+import { maybeSendPpAlerts } from '../lib/pp-alerts.js';
 
 function authed(req) {
   const auth = req.headers.authorization || '';
@@ -33,7 +34,8 @@ export default async function handler(req, res) {
     const running = await getState('sync_lock');
     if (running && Date.now() - running < 55000) return res.status(200).json({ skipped: 'already running' });
     await setState('sync_lock', Date.now());
-    const log = await runSync({ budgetMs: 50000 });
+    const log = await runSync({ budgetMs: 45000 });
+    try { log.pp = await maybeSendPpAlerts(); } catch (e) { log.ppError = e.message; }
     await setState('sync_lock', 0);
     return res.status(200).json({ ok: true, log });
   } catch (e) {

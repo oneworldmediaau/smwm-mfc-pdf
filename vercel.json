@@ -16,6 +16,9 @@
     },
     "api/sync.js": {
       "maxDuration": 60
+    },
+    "api/pp.js": {
+      "includeFiles": "lib/**"
     }
   },
   "crons": [
